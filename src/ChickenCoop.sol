@@ -2,6 +2,7 @@ pragma solidity ^0.8.17;
 import "./BirthFactory.sol";
 import "./EggToken.sol";
 import "./LitterToken.sol";
+import "./ProtectShellToken.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ChickenCoop is BirthFactory {
@@ -14,11 +15,10 @@ contract ChickenCoop is BirthFactory {
         bool isExisted;
         uint256 id;
         uint256 layingTimes;
+        uint256 protectShellCount;
         uint256 foodIntake;
         uint256 layingLeftCycle;
         uint256 lastCheckBlockNumberPerSeat;
-        // uint256 lastLayEggBlockNumber;
-        // uint256 lastFeedBlockNumber;
     }
 
     struct CoopInfo{
@@ -29,19 +29,23 @@ contract ChickenCoop is BirthFactory {
         uint256 lastCheckHenIndex;
         uint256 debtEggToken;
     }
-    mapping(uint256 => CoopSeat) coopSeats;
+    mapping(address => mapping(uint256 => CoopSeat)) coopSeats;
     mapping(address => CoopInfo) coopInfos;
     uint constant maxCoopSeat = 20;
     address immutable eggTokenAddress;
     address immutable litterTokenAddress;
+    address immutable shellTokenAddress;
 
-    constructor(address eggToken, address litterToken) {
+    constructor(address eggToken, address litterToken, address shellTokenAddress)  {
         eggTokenAddress = eggToken;
         litterTokenAddress = litterToken;
-
+        shellTokenAddress = shellTokenAddress;
     }
     
-    function layEggAndLitter(address target) public{
+    /**
+     * @dev let hen lay egg and litter and get protect shell
+     */
+    function payIncentive(address target) public {
         CoopInfo memory coopInfo = coopInfos[target];
         uint currentBlockNumber = getCurrentBlockNumber();
         uint lastCheckBlockNumber = coopInfo.lastCheckBlockNumber;
@@ -51,29 +55,32 @@ contract ChickenCoop is BirthFactory {
             return;
         }
 
+        // check all coop seat
         uint gasUsed;
         uint gasLeft = gasleft();
         uint256 totalSeat = coopInfo.totalSeat;
         uint i;
         for(i=coopInfo.lastCheckHenIndex; i<totalSeat && gasUsed < 50_000; i++){
-            CoopSeat memory coopSeat = coopSeats[i];
+            CoopSeat memory coopSeat = coopSeats[target][i];
             if(coopSeat.isOpened && coopSeat.isExisted){
                 // TODO : 計算食物消耗量
                 uint blockDelta = currentBlockNumber - coopSeat.lastCheckBlockNumberPerSeat;
                 coopSeat.lastCheckBlockNumberPerSeat = currentBlockNumber;
-                uint256 validBlocks = calConsumeFoodIntake(coopSeat, blockDelta);
+                uint256 validBlocks = calConsumeFoodIntake(target, i, blockDelta);
                 
-                // TODO : 檢查垃圾桶的垃圾量，滿就不動
+                // TODO : 檢查垃圾桶的垃圾量
                 bool isFull = checkTrashCan(target, coopInfo.trashCan);
 
                 // TODO : 減少layingleftCycle，並下獎勵和垃圾
-                getReward(isFull, coopSeat, i, validBlocks);
+                getReward(target, i, isFull, validBlocks);
 
+                coopSeats[target][i].lastCheckBlockNumberPerSeat = currentBlockNumber;
             }
 
             gasUsed = gasUsed + gasLeft - gasleft();
             gasLeft = gasleft();
         }
+
         if(gasUsed >= 50_000){
             emit OutOfGasLimit(gasUsed, coopInfo.lastCheckHenIndex, i);
             coopInfos[target].lastCheckHenIndex = i;
@@ -82,25 +89,32 @@ contract ChickenCoop is BirthFactory {
         }
     }
 
-    function calConsumeFoodIntake(CoopSeat memory coopSeat, uint blockDelta) internal returns (uint256){
-        HenCharacter memory hen = henCharacters[coopSeat.id];
+    /**
+     * @dev use foodIntake to calculate how many vaild blocks in blockDelta
+     */
+    function calConsumeFoodIntake(address target, uint coopSeatIndex, uint blockDelta) internal returns (uint256){
+        HenCharacter memory hen = henCharacters[coopSeats[target][coopSeatIndex].id];
         uint256 consumeFoodForOneBlock = hen.consumeFoodForOneBlock;
-        uint256 foodIntake = coopSeat.foodIntake;
+        uint256 foodIntake = coopSeats[target][coopSeatIndex].foodIntake;
         uint256 totalConsumeFood = consumeFoodForOneBlock * blockDelta;
 
-        if(foodIntake == 0){
+        if(foodIntake == 0 || blockDelta == 0){
             return 0;
         }
 
+        // check if foodIntake is enough for totalConsumeFood
         if(foodIntake >= totalConsumeFood){
-            coopSeats[coopSeat.id].foodIntake = foodIntake - totalConsumeFood;
+            coopSeats[target][coopSeatIndex].foodIntake = foodIntake - totalConsumeFood;
             return blockDelta;
         }else{
-            coopSeats[coopSeat.id].foodIntake = foodIntake % consumeFoodForOneBlock;
+            coopSeats[target][coopSeatIndex].foodIntake = foodIntake % consumeFoodForOneBlock;
             return foodIntake / consumeFoodForOneBlock;
         }
     }
 
+    /**
+     * @dev check if trash can is full
+     */
     function checkTrashCan(address target, uint maxTrashCanAmount) internal returns (bool){
         uint litterBalance = IERC20(litterTokenAddress).balanceOf(target);
 
@@ -109,38 +123,90 @@ contract ChickenCoop is BirthFactory {
         }
         return false;
     }
-
-    function getReward(bool isFull, CoopSeat memory coopSeat,  uint seatIndex, uint validBlock) internal {
+    /**
+     * @dev give reward to target
+     */
+    function getReward(address target, uint seatIndex, bool isFull, uint validBlock) internal {
         if(validBlock == 0){
             return;
         }
+        CoopSeat memory coopSeat = coopSeats[target][seatIndex];
         uint leftBlock = coopSeat.layingLeftCycle;
         HenCharacter memory hen = henCharacters[coopSeat.id];
-        uint eggTokenAmount = hen.unitEggToken;
-        uint litterTokenAmount = hen.unitLitterToken;
         if(leftBlock <= validBlock){
+            (uint nowLayingTimes, uint newLeftLayingBlock) = calLeftLayingBlock(leftBlock, validBlock, hen.unitEggToken);
+            coopSeats[target][seatIndex].layingLeftCycle = newLeftLayingBlock;
             if(isFull){
-                emit TrashCanFull(seatIndex,coopSeat.id, eggTokenAmount);
+                uint increaseEggToken = hen.unitEggToken * nowLayingTimes;
+                emit TrashCanFull(seatIndex, coopSeat.id, increaseEggToken);
             }else{
-                // give egg token and litter token and protect shell
-                IERC20(eggTokenAddress).mint(msg.sender, eggTokenAmount);
-                IERC20(litterTokenAddress).mint(msg.sender, litterTokenAmount);
-                if(++coopSeat.layingTimes % hen.protectShellPeriod == 0){
-                    // give protect shell
-                }
-            }
-            uint newDelta = leftBlock-validBlock;
-            if(newDelta == 0){
-                coopSeat.layingLeftCycle = hen.layingCycle;
-            } else{
-                coopSeat.layingLeftCycle = newDelta;
+                // give egg token 
+                uint eggTokenAmount = giveEggToken(target, hen.unitEggToken, nowLayingTimes);
+
+                // give litter token
+                uint litterTokenAmount = giveLitterToken(target, hen.unitLitterToken, nowLayingTimes);
+
+                // give protect shell
+                uint shellTokenAmount = giveProtectShell(target, seatIndex, hen.protectShellPeriod, nowLayingTimes);
+
+                emit LayEGGs(seatIndex, eggTokenAmount, litterTokenAmount, shellTokenAmount);
             }
         }else{
-            coopSeat.layingLeftCycle = leftBlock - validBlock;
+            coopSeats[target][seatIndex].layingLeftCycle = leftBlock - validBlock;
         }
+
+    }
+    function giveEggToken(address target, uint unitEggToken, uint nowLayingTimes) internal  returns (uint nowLayEggAmount){
+        uint increaseEggToken = unitEggToken * nowLayingTimes;
+        uint debtEggToken = coopInfos[target].debtEggToken;
+        if(debtEggToken >=  increaseEggToken){
+            coopInfos[target].debtEggToken = debtEggToken - increaseEggToken;
+        }else{
+            nowLayEggAmount = increaseEggToken - debtEggToken;
+            coopInfos[target].debtEggToken = 0;
+            IEggToken(eggTokenAddress).mint(target, nowLayEggAmount);
+        }
+        return nowLayEggAmount;
+    }
+
+    function giveLitterToken(address target, uint unitLitterToken, uint nowLayingTimes) internal  returns (uint nowLitterAmount){
+        nowLitterAmount = unitLitterToken * nowLayingTimes;
+        ILitterToken(litterTokenAddress).mint(target, nowLitterAmount);
+        return nowLitterAmount;
+    }
+    function giveProtectShell(address target, uint seatIndex, uint shellPeriod, uint nowLayingTimes) internal  returns (uint nowShellAmount){
+        CoopSeat memory coopSeat = coopSeats[target][seatIndex];
+        uint preShellAmount = coopSeat.protectShellCount;
+        uint totalLayingTimes = coopSeat.layingTimes + nowLayingTimes;
+        uint totalProtectShell = totalLayingTimes / shellPeriod;
+        nowShellAmount = totalProtectShell - preShellAmount;
+
+        if(nowShellAmount > 0){
+            IProtectShellToken(shellTokenAddress).mint(target, nowShellAmount);
+        }
+
+        coopSeats[target][seatIndex].layingTimes = totalLayingTimes;
+        coopSeats[target][seatIndex].protectShellCount = preShellAmount + nowShellAmount; 
+        return nowShellAmount;
+    }
+
+    /**
+     * @dev calculate how many times hen can lay egg in validBlock
+     */
+    function calLeftLayingBlock(uint leftBlock, uint validBlock, uint unitEggToken) internal returns (uint nowLayingTimes, uint newLeftLayingBlock){
+        uint deltaBlock = validBlock - leftBlock;
+        nowLayingTimes = 1 + deltaBlock / unitEggToken;
+        newLeftLayingBlock = unitEggToken - deltaBlock % unitEggToken;
+        return (nowLayingTimes, newLeftLayingBlock);
     }
 
     function getCurrentBlockNumber() public view returns (uint256){
         return block.number;
+    }
+
+    function feedHen(uint seatIndex) public{
+    }
+
+    function helpFeedHen(address target, uint seatIndex)public{
     }
 }
