@@ -1,8 +1,7 @@
 pragma solidity ^0.8.17;
 import "./BirthFactory.sol";
-import "./EggToken.sol";
-import "./LitterToken.sol";
-import "./ProtectShellToken.sol";
+import "./Token.sol";
+import "./GoldenCore.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ChickenCoop is BirthFactory {
@@ -36,10 +35,10 @@ contract ChickenCoop is BirthFactory {
     address immutable litterTokenAddress;
     address immutable shellTokenAddress;
 
-    constructor(address eggToken, address litterToken, address shellTokenAddress)  {
+    constructor(address eggToken, address litterToken, address shellToken)  {
         eggTokenAddress = eggToken;
         litterTokenAddress = litterToken;
-        shellTokenAddress = shellTokenAddress;
+        shellTokenAddress = shellToken;
     }
     
     /**
@@ -115,8 +114,8 @@ contract ChickenCoop is BirthFactory {
     /**
      * @dev check if trash can is full
      */
-    function checkTrashCan(address target, uint maxTrashCanAmount) internal returns (bool){
-        uint litterBalance = IERC20(litterTokenAddress).balanceOf(target);
+    function checkTrashCan(address target, uint maxTrashCanAmount) internal view returns (bool){
+        uint litterBalance = IToken(litterTokenAddress).balanceOf(target);
 
         if(litterBalance >= maxTrashCanAmount){
             return true;
@@ -164,14 +163,14 @@ contract ChickenCoop is BirthFactory {
         }else{
             nowLayEggAmount = increaseEggToken - debtEggToken;
             coopInfos[target].debtEggToken = 0;
-            IEggToken(eggTokenAddress).mint(target, nowLayEggAmount);
+            IToken(eggTokenAddress).mint(target, nowLayEggAmount);
         }
         return nowLayEggAmount;
     }
 
     function giveLitterToken(address target, uint unitLitterToken, uint nowLayingTimes) internal  returns (uint nowLitterAmount){
         nowLitterAmount = unitLitterToken * nowLayingTimes;
-        ILitterToken(litterTokenAddress).mint(target, nowLitterAmount);
+        IToken(litterTokenAddress).mint(target, nowLitterAmount);
         return nowLitterAmount;
     }
     function giveProtectShell(address target, uint seatIndex, uint shellPeriod, uint nowLayingTimes) internal  returns (uint nowShellAmount){
@@ -182,7 +181,7 @@ contract ChickenCoop is BirthFactory {
         nowShellAmount = totalProtectShell - preShellAmount;
 
         if(nowShellAmount > 0){
-            IProtectShellToken(shellTokenAddress).mint(target, nowShellAmount);
+            IToken(shellTokenAddress).mint(target, nowShellAmount);
         }
 
         coopSeats[target][seatIndex].layingTimes = totalLayingTimes;
@@ -193,7 +192,7 @@ contract ChickenCoop is BirthFactory {
     /**
      * @dev calculate how many times hen can lay egg in validBlock
      */
-    function calLeftLayingBlock(uint leftBlock, uint validBlock, uint unitEggToken) internal returns (uint nowLayingTimes, uint newLeftLayingBlock){
+    function calLeftLayingBlock(uint leftBlock, uint validBlock, uint unitEggToken) internal pure returns (uint nowLayingTimes, uint newLeftLayingBlock){
         uint deltaBlock = validBlock - leftBlock;
         nowLayingTimes = 1 + deltaBlock / unitEggToken;
         newLeftLayingBlock = unitEggToken - deltaBlock % unitEggToken;
@@ -204,9 +203,37 @@ contract ChickenCoop is BirthFactory {
         return block.number;
     }
 
-    function feedHen(uint seatIndex) public{
+    function helpFeedHen(address target, uint seatIndex, uint feedAmount) public {
+        feedHen(msg.sender, target, seatIndex, feedAmount);
     }
 
-    function helpFeedHen(address target, uint seatIndex)public{
+    function feedOwnHen(uint seatIndex, uint feedAmount) public {
+        feedHen(msg.sender, msg.sender, seatIndex, feedAmount);
+    }
+    
+    function feedHen(address sender, address target, uint seatIndex, uint feedAmount) public{
+        CoopSeat memory coopSeat = coopSeats[target][seatIndex];
+        require(coopSeat.isOpened, "seat is not opened");
+        require(coopSeat.isExisted, "No hen in this seat");
+        require(feedAmount > 0, "feed amount must be greater than 0");
+        require(IToken(eggTokenAddress).balanceOf(sender) >= feedAmount, "Not enough egg token");
+
+        HenCharacter memory hen = henCharacters[coopSeat.id];
+        uint256 foodIntake = coopSeat.foodIntake;
+        uint256 maxFoodIntake = hen.maxFoodIntake;
+        uint256 totalFoodIntake = foodIntake + feedAmount;
+
+        if(totalFoodIntake > maxFoodIntake){
+            totalFoodIntake = maxFoodIntake;
+            feedAmount = maxFoodIntake - foodIntake;
+        }
+        coopSeats[target][seatIndex].foodIntake = totalFoodIntake;
+        IToken(eggTokenAddress).burn(sender, feedAmount);
+    }
+
+    function putUpHen() public {
+    }
+
+    function takeDownHen() public {
     }
 }
