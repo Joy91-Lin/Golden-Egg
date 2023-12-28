@@ -1,44 +1,84 @@
 pragma solidity ^0.8.17;
 
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
 interface IGoldenCore{
-    function setAccountModifyCurrentBlock(address account,GoldenCore.AccountAction action) external;
     function checkActivated(address account) external view returns (bool);
     function getAccountLastModifyBlockNumber(address account) external view returns(uint);
     function getCurrentBlockNumber() external view returns (uint256);
 }
 
-contract GoldenCore  {
-    event AccountLastestAction(address indexed account, uint indexed blockNumber, AccountAction indexed action);
+interface IGoldenCoreEvent{
+    event AccountLastestAction(address indexed account, uint indexed blockNumber, GoldenCore.AccountAction indexed action);
+}
+
+interface IGoldenCoreError{
+    error SenderMustBeAdmin(address caller);
+    error TargetDoesNotJoinGameYet(address target);
+}
+ 
+contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError {
     enum AccountAction{
-        FeedChicken,
+        StartGame,
+        HelpOthers,
+        Feed,
         CleanCoop,
         AttackGame,
         OpenProtectShell,
-        Shopping
+        Shopping,
+        PayIncentive,
+        ExchangeCoopSeats
     }
 
     struct AccountInfo{
-        uint256 totalChickenSeat;
+        uint256 totalCoopSeats;
         uint256 totalTrashCan;
-        mapping(uint256 => uint256) totalHen;
-        mapping(uint256 => uint256) totalWatchDog;
-        mapping(uint256 => uint256) totalProtectShell;
+        mapping(uint256 => uint256) totalHens;
+        mapping(uint256 => uint256) totalWatchDogs;
+        mapping(uint256 => uint256) hensInCoop;
         uint256 lastActionBlockNumber;
-        AccountAction lastAction;
+
+        uint256 lastPayIncentiveBlockNumber;
+        uint256 lastCheckHenIndex;
+        uint256 debtEggToken;
     }
 
     address private constant adminAddress = 0x4ff1B1f7b28345eFC5e8f628A19e96c34696dbF0;
-    mapping(address => AccountInfo) private accountInfos;
+    mapping(address => AccountInfo) internal accountInfos;
     uint constant BLOCKAMOUNT = 40_000; // around 7 days if creating a block take 15 second
-    
+    mapping(address => bool) internal allowers;
 
-    constructor() {
+    constructor() Ownable(msg.sender){
+        allowers[msg.sender] = true;
+        allowers[address(this)] = true;
     }
 
-    function setAccountModifyCurrentBlock(address account,AccountAction action) public {
+    modifier onlyAdmin() {
+        if(allowers[msg.sender])
+            _;
+        else
+            revert SenderMustBeAdmin(msg.sender);
+    }
+
+    function addAdmin(address account) public onlyOwner {
+        allowers[account] = true;
+    }
+
+    function removeAdmin(address account) public onlyOwner {
+        allowers[account] = false;
+    }
+
+    function isAdmin(address account) public view returns (bool){
+        return allowers[account];
+    }
+
+    function startGame() public{
+        
+    }
+
+    function setAccountActionModifyBlock(address account,AccountAction action) internal {
         uint256 currentBlockNumber = getCurrentBlockNumber();
         accountInfos[account].lastActionBlockNumber = currentBlockNumber;
-        accountInfos[account].lastAction = action;
 
         emit AccountLastestAction(account, currentBlockNumber, action);
     }
@@ -61,5 +101,11 @@ contract GoldenCore  {
 
     function getCurrentBlockNumber() public view returns (uint256){
         return block.number;
+    }
+
+    function isAccountJoinGame(address account) public view returns (bool){
+        if(accountInfos[account].lastActionBlockNumber == 0)
+            revert TargetDoesNotJoinGameYet(account);
+        return true;
     }
 }
