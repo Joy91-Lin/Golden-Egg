@@ -1,7 +1,6 @@
 pragma solidity ^0.8.17;
 
-// import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {AdminControl} from "./AdminControl.sol";
+import {GoldenCore} from "./GoldenCore.sol";
 
 interface IToken{
     function name() external view returns (string memory);
@@ -20,7 +19,7 @@ interface ITokenError{
      * @dev Indicates a failure with the token `sender`. Used in transfers.
      * @param caller Address who is trying to interact with the token.
      */
-    error SenderMustBeAdmin(address caller);
+    // error SenderMustBeAdmin(address caller);
     /**
      * @dev Indicates a failure with the token `sender`. Used in transfers.
      * @param sender Address whose tokens are being transferred.
@@ -50,7 +49,7 @@ interface ITokenEvent{
     event Transfer(address indexed from, address indexed to, uint256 value);
 }
 
-contract Token is  ITokenError, ITokenEvent, IToken, AdminControl{
+contract Token is  ITokenError, ITokenEvent, IToken, GoldenCore{
     mapping(address account => uint256) private _balances;
     uint256 private _totalSupply;
     string private _name;
