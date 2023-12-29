@@ -1,4 +1,4 @@
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.21;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -6,6 +6,8 @@ interface IGoldenCore{
     function checkActivated(address account) external view returns (bool);
     function getAccountLastModifyBlockNumber(address account) external view returns(uint);
     function getCurrentBlockNumber() external view returns (uint256);
+    function isAccountJoinGame(address account) external view returns (bool);
+    function getTotalTrashCanAmount(address account) external view returns (uint256);
 }
 
 interface IGoldenCoreEvent{
@@ -37,7 +39,6 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
         mapping(uint256 => uint256) totalWatchDogs;
         mapping(uint256 => uint256) hensInCoop;
         uint256 lastActionBlockNumber;
-
         uint256 lastPayIncentiveBlockNumber;
         uint256 lastCheckHenIndex;
         uint256 debtEggToken;
@@ -107,5 +108,9 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
         if(accountInfos[account].lastActionBlockNumber == 0)
             revert TargetDoesNotJoinGameYet(account);
         return true;
+    }
+
+    function getTotalTrashCanAmount(address account) public view returns (uint256){
+        return accountInfos[account].totalTrashCan;
     }
 }
