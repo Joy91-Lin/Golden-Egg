@@ -1,8 +1,18 @@
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.21;
 
 import "./BirthFactory.sol";
 import "./Token.sol";
 import "./GoldenCore.sol";
+
+interface IChickenCoop{
+    function putUpHen(uint seatIndex, uint henId, bool forceExchange, uint feedAmount) external payable;
+    function takeDownHen(uint seatIndex, bool forceExchange) external payable;
+    function helpFeedHen(address target, uint seatIndex, uint feedAmount) external;
+    function feedOwnHen(uint seatIndex, uint feedAmount) external;
+    function showHenHunger(address target) external view returns (ChickenCoop.FoodIntake[] memory);
+    function getAllSeatStatus(bool _payIncentive) external returns (ChickenCoop.CoopSeat[] memory);
+    function payIncentive(address target) external;
+}
 
 interface IChickenCoopEvent{
     event PutUpHenToCoopSeats(address indexed sender, uint256 seatIndex, uint256 henId);
@@ -41,8 +51,6 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
     address immutable eggTokenAddress;
     address immutable litterTokenAddress;
     address immutable shellTokenAddress;
-    uint constant exchangeFeeEggToken = 300;
-    uint constant exchangeFeeEther = 0.0005 ether;
 
     constructor(address eggToken, address litterToken, address shellToken)  {
         eggTokenAddress = eggToken;
@@ -75,7 +83,7 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
                 hensCatalog[henId].layingCycle, 
                 getCurrentBlockNumber());
         emit PutUpHenToCoopSeats(msg.sender, seatIndex, henId);
-        setAccountActionModifyBlock(msg.sender, AccountAction.ExchangeCoopSeats);
+        setAccountActionModifyBlock(msg.sender, AccountAction.ExchangeHen);
 
         if(feedAmount > 0){
             feedHen(msg.sender, msg.sender, seatIndex, feedAmount);
@@ -103,12 +111,12 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         }
         coopSeats[msg.sender][seatIndex] = CoopSeat(true, false, 0, 0, 0, 0, 0, 0);
         emit TakeDownHenFromCoopSeats(msg.sender, seatIndex, henId);
-        setAccountActionModifyBlock(msg.sender, AccountAction.ExchangeCoopSeats);
+        setAccountActionModifyBlock(msg.sender, AccountAction.ExchangeHen);
     }
 
     function ownHenId(address sender, uint henId) internal view {
-        require(hensCatalog[henId].price > 0, "This hen is not exist. Please check henId.");
-        uint256 totalHen = accountInfos[sender].totalHens[henId];
+        require(henId > totalHenCharacters, "Invalid hen id.");
+        uint256 totalHen = accountInfos[sender].totalOwnHens[henId];
         uint256 henInCoop = accountInfos[sender].hensInCoop[henId];
         require(totalHen - henInCoop > 0 , "Insufficient Hen.");
     }
@@ -127,10 +135,11 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
     }
 
     function checkExchangeFee(address sender, uint value) internal {
-        if(IToken(eggTokenAddress).balanceOf(sender) < exchangeFeeEggToken){
-            require(value >= exchangeFeeEther, "Not enough Fee For Exchange.");
+        if(value > 0){
+            require(value == handlingFeeEther, "Incorrect fee.");
         } else{
-            IToken(eggTokenAddress).burn(sender, exchangeFeeEggToken);
+            require(IToken(eggTokenAddress).balanceOf(sender) >= handlingFeeEggToken, "Not enough egg token.");
+            IToken(eggTokenAddress).burn(sender, handlingFeeEggToken);
         }
     }
     
@@ -297,7 +306,6 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
     }
 
     function helpFeedHen(address target, uint seatIndex, uint feedAmount) public {
-        isAccountJoinGame(msg.sender);
         isAccountJoinGame(target);
 
         payIncentive(target);
@@ -321,6 +329,7 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         HenCharacter memory hen = hensCatalog[coopSeat.id];
         uint256 foodIntake = coopSeat.foodIntake;
         uint256 maxFoodIntake = hen.maxFoodIntake;
+        if(foodIntake >= maxFoodIntake) revert("Hen is full.");
         uint256 totalFoodIntake = foodIntake + feedAmount;
 
         if(totalFoodIntake > maxFoodIntake){

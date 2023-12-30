@@ -33,7 +33,7 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         bool attackResult;
         AttackStatus status;
     }
-
+    
     enum AttackStatus {
         None,
         Pending,
@@ -97,9 +97,10 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
     }
 
     function checkFee(address sender, uint value) internal {
-        if(IToken(eggTokenAddress).balanceOf(sender) < handlingFeeEggToken){
-            require(value >= handlingFeeEther, "Not enough Fee For Exchange.");
+        if(value > 0){
+            require(value == handlingFeeEther, "Incorrect fee.");
         } else{
+            require(IToken(eggTokenAddress).balanceOf(sender) >= handlingFeeEggToken, "Not enough egg token.");
             IToken(eggTokenAddress).burn(sender, handlingFeeEggToken);
         }
     }
@@ -200,13 +201,11 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         require(attackInfo.status == AttackStatus.Pending, "Attack already completed");
         require(attackInfo.chainLinkFees > 0, "Request not found");
 
-        uint256 attackRandom = (randomWords[0] % 100) + 1;
+        uint256 attackRandom = (randomWords[0] % attackRange) + 1;
         
         attackInfo.attackRandom = attackRandom;
 
-        uint targetWatchDogId = watchDogInfos[attackInfo.target].id;
-        mapping(uint256 => bool) storage protectNumber = dogsCatalog[targetWatchDogId].protectNumber;
-        bool attackResult = !protectNumber[attackRandom];
+        bool attackResult = !accountInfos[attackInfo.target].protectNumbers[attackRandom];
 
 
         if(attackResult){
@@ -236,10 +235,10 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
     }
 
     function giveEggToken(address attacker, address target) internal returns (uint256) {
-        uint256 rewardRatioMantissa = dogsCatalog[watchDogInfos[target].id].rewardRatioMantissa;
+        uint256 rewardPercentageMantissa = dogsCatalog[watchDogInfos[target].id].rewardPercentageMantissa;
         uint256 targetEggBalance = IToken(eggTokenAddress).balanceOf(target);
         uint256 rewardMaxEggAmount = targetEggBalance * closeFactorMantissa / MANTISSA;
-        uint256 rewardEggAmount = rewardMaxEggAmount * rewardRatioMantissa / MANTISSA;
+        uint256 rewardEggAmount = rewardMaxEggAmount * rewardPercentageMantissa / MANTISSA;
 
         if(rewardEggAmount < minEggTokenReward){
             uint256 targetDebt = minEggTokenReward - rewardEggAmount;
@@ -257,12 +256,12 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
     }
 
     function dumpLitterToken(address attacker, address target) internal returns (uint256){
-        uint256 dumpRatioMantissa = dogsCatalog[watchDogInfos[target].id].dumpRatioMantissa;
+        uint256 dumpPercentageMantissa = dogsCatalog[watchDogInfos[target].id].dumpPercentageMantissa;
         uint256 targetLitterBalance = IToken(litterTokenAddress).balanceOf(target);
         uint256 targetTrashCanAmount = getTotalTrashCanAmount(target);
         uint256 leftAmount = targetTrashCanAmount - targetLitterBalance;
         uint256 dumpMaxLitterAmount = leftAmount * closeFactorMantissa / MANTISSA;
-        uint256 dumpLitterAmount = dumpMaxLitterAmount * dumpRatioMantissa / MANTISSA;
+        uint256 dumpLitterAmount = dumpMaxLitterAmount * dumpPercentageMantissa / MANTISSA;
         
         uint256 attackerLitterBalance = IToken(litterTokenAddress).balanceOf(attacker);
         if(dumpLitterAmount > attackerLitterBalance){
@@ -283,8 +282,8 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         uint256 currentBlock = getCurrentBlockNumber();
         watchDogInfos[target].protectShellStartBlockNumber = currentBlock;
         watchDogInfos[target].protectShellEndBlockNumber = currentBlock + targetShellReward;
-        uint256 rewardRatioMantissa = dogsCatalog[watchDogInfos[target].id].rewardRatioMantissa;
-        uint256 rewardEggAmount = targetShellReward * rewardRatioMantissa / MANTISSA;
+        uint256 rewardPercentageMantissa = dogsCatalog[watchDogInfos[target].id].rewardPercentageMantissa;
+        uint256 rewardEggAmount = targetShellReward * rewardPercentageMantissa / MANTISSA;
         IToken(shellTokenAddress).mint(target, rewardEggAmount);
     }
 
