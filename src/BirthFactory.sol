@@ -22,8 +22,6 @@ contract BirthFactory is GoldenCore {
     }
 
     struct DogCharacter {
-        mapping(uint256 => bool) protectNumber;
-        uint256 totalprotectNumbers;
         uint256 rewardPercentageMantissa;
         uint256 dumpPercentageMantissa;
         uint256 ethPrice;
@@ -122,18 +120,6 @@ contract BirthFactory is GoldenCore {
         dogsCatalog[_dogId].ethPrice = _ethPrice;
         dogsCatalog[_dogId].eggPrice = _eggPrice;
         dogsCatalog[_dogId].isOnSale = _isOnSale;
-    }
-
-    function setProtectNumber(uint256 _dogId, uint256 _protectNumber) public onlyAdmin {
-        checkDogExists(_dogId);
-        dogsCatalog[_dogId].totalprotectNumbers++;
-        dogsCatalog[_dogId].protectNumber[_protectNumber] = true;
-    }
-
-    function removeProtectNumber(uint256 _dogId, uint256 _protectNumber) public onlyAdmin {
-        checkDogExists(_dogId);
-        dogsCatalog[_dogId].totalprotectNumbers--;
-        dogsCatalog[_dogId].protectNumber[_protectNumber] = false;
     }
 
     function setHenOnSale(uint256 _henId, bool _isOnSale) public onlyAdmin {

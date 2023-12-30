@@ -29,14 +29,17 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
         OpenProtectShell,
         Shopping,
         PayIncentive,
-        ExchangeCoopSeats
+        ExchangeHen,
+        ExchangeWatchDog
     }
 
     struct AccountInfo{
         uint256 totalCoopSeats;
         uint256 totalTrashCan;
-        mapping(uint256 => uint256) totalHens;
-        mapping(uint256 => uint256) totalWatchDogs;
+        mapping(uint256 => uint256) totalOwnHens;
+        mapping(uint256 => bool) totalOwnWatchDogs;
+        uint256 totalProtectNumbers;
+        mapping(uint256 => bool) protectNumbers;
         mapping(uint256 => uint256) hensInCoop;
         uint256 lastActionBlockNumber;
         uint256 lastPayIncentiveBlockNumber;
@@ -48,6 +51,11 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
     mapping(address => AccountInfo) internal accountInfos;
     uint constant BLOCKAMOUNT = 40_000; // around 7 days if creating a block take 15 second
     mapping(address => bool) internal allowers;
+
+    uint constant handlingFeeEggToken = 1000;
+    uint constant handlingFeeEther = 0.0001 ether;
+    uint256 constant attackRange = 100;
+    uint256 immutable maxTotalProtectNumbers = attackRange / 2;
 
     constructor() Ownable(msg.sender){
         allowers[msg.sender] = true;
