@@ -12,6 +12,8 @@ interface IAttckGameEvent{
 }
 
 contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
+    event WatchDogExchange(address indexed owner, uint256 indexed id);
+    event OpenProtectShell(address indexed owner, uint256 indexed startBlockNumber, uint256 indexed endBlockNumber);
     struct WatchDogInfo {
         uint256 id;
         uint256 protectShellStartBlockNumber;
@@ -35,8 +37,7 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
     enum AttackStatus {
         None,
         Pending,
-        Completed,
-        Revert
+        Completed
     }
 
     address immutable chickenCoopAddress;
@@ -91,6 +92,7 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
             lastBeAttackedRequestId: 0,
             status: AttackStatus.None
         });
+        emit WatchDogExchange(msg.sender, id);
         setAccountActionModifyBlock(msg.sender, AccountAction.ExchangeWatchDog);
     }
 
@@ -104,17 +106,23 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
 
     function openProtectShell(uint amount) public payable{
         uint balance = IToken(shellTokenAddress).balanceOf(msg.sender);
+        // check input amount
         require(amount <= balance, "You don't have enough shell token.");
         require(amount <= maxOpenShellPeriod, "You can not open protect shell for so long.");
+
         checkFee(msg.sender, msg.value);
+
         uint256 currentBlock = getCurrentBlockNumber();
         uint256 shellEndBlockNumber = watchDogInfos[msg.sender].protectShellEndBlockNumber;
         require(shellEndBlockNumber + cooldownPeriod <= currentBlock, "You can not open protect shell now.");
-        // continue open shell
-        watchDogInfos[msg.sender].status = AttackStatus.Revert;
-        watchDogInfos[msg.sender].protectShellStartBlockNumber = currentBlock + openShellGap;
+        if(watchDogInfos[msg.sender].status == AttackStatus.Pending) revert("You are being attack.");
+
+        watchDogInfos[msg.sender].protectShellStartBlockNumber = currentBlock + openShellGap ;
         watchDogInfos[msg.sender].protectShellEndBlockNumber = currentBlock + openShellGap + amount;
         IToken(shellTokenAddress).burn(msg.sender, amount);
+
+        emit OpenProtectShell(msg.sender, currentBlock + cooldownPeriod, currentBlock + openShellGap + amount);
+        setAccountActionModifyBlock(msg.sender, AccountAction.OpenProtectShell);
     }
 
     function isProtectShellOpen(address target,uint currentBlock) public view returns(bool){
@@ -144,14 +152,13 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         // TODO : check target 活躍度
         require(checkActivated(target), "Target can not be attack.");
 
-        // TODO : check target is not being attack
-        require(watchDogInfos[target].status != AttackStatus.Pending &&
-            watchDogInfos[target].status != AttackStatus.Revert, 
-            "Target can not be attack now .");
-        watchDogInfos[target].status = AttackStatus.Pending;
-
         // TODO : check target 防護罩是否開啟
         require(!isProtectShellOpen(target, getCurrentBlockNumber()), "Target's protect shell is open!");
+
+        // TODO : check target is not being attack
+        require(watchDogInfos[target].status != AttackStatus.Pending ,
+            "Target can not be attack now .");
+        watchDogInfos[target].status = AttackStatus.Pending;
 
         // TODO : target have egg token
         require(IToken(eggTokenAddress).balanceOf(target) > 0, "Target have no Egg Token!");
