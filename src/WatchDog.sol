@@ -6,6 +6,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./ChickenCoop.sol";
 import "./Token.sol";
 
+interface IWatchDog {
+    function isBeingAttack(address target) external view returns(bool);
+}
 interface IAttckGameEvent{
     event AttackRequest(uint256 indexed requestId, address indexed requester, address indexed target);
     event AttackResult(uint256 indexed requestId, address indexed requester, address indexed target, bool result);
@@ -157,8 +160,7 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         require(!isProtectShellOpen(target, getCurrentBlockNumber()), "Target's protect shell is open!");
 
         // TODO : check target is not being attack
-        require(watchDogInfos[target].status != AttackStatus.Pending ,
-            "Target can not be attack now .");
+        require(!isBeingAttack(target), "Target can not be attack now .");
         watchDogInfos[target].status = AttackStatus.Pending;
 
         // TODO : target have egg token
@@ -205,11 +207,17 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         
         attackInfo.attackRandom = attackRandom;
 
-        bool attackResult = !accountInfos[attackInfo.target].protectNumbers[attackRandom];
-
-
-        if(attackResult){
+        uint256 targetProtectNumber = accountInfos[attackInfo.target].protectNumbers[attackRandom];
+        bool attackResult = false;
+        if(targetProtectNumber > 0){
+            // attack fail
+            accountInfos[attackInfo.target].protectNumbers[attackRandom]--;
+            if(accountInfos[attackInfo.target].protectNumbers[attackRandom] == 0){
+                accountInfos[attackInfo.target].totalProtectNumbers--;
+            }
+        } else {
             // attack success
+            attackResult = true;
             IChickenCoop(chickenCoopAddress).payIncentive(attackInfo.target);
             giveRewardToAttacker(requestId);
             helpTargetOpenProtectShell(requestId);
@@ -297,5 +305,9 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
 
     function getAttackInfo(uint256 requestId) external view returns(Attack memory){
         return attacks[requestId];
+    }
+
+    function isBeingAttack(address target) public view returns(bool){
+        return watchDogInfos[target].status == AttackStatus.Pending;
     }
 }

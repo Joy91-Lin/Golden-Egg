@@ -37,10 +37,10 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
         uint256 totalCoopSeats;
         uint256 totalTrashCan;
         mapping(uint256 => uint256) totalOwnHens;
+        mapping(uint256 => uint256) hensInCoop;
         mapping(uint256 => bool) totalOwnWatchDogs;
         uint256 totalProtectNumbers;
-        mapping(uint256 => bool) protectNumbers;
-        mapping(uint256 => uint256) hensInCoop;
+        mapping(uint256 => uint256) protectNumbers;
         uint256 lastActionBlockNumber;
         uint256 lastPayIncentiveBlockNumber;
         uint256 lastCheckHenIndex;
