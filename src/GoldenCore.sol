@@ -56,6 +56,7 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
     uint constant handlingFeeEther = 0.0001 ether;
     uint256 constant attackRange = 100;
     uint256 immutable maxTotalProtectNumbers = attackRange / 2;
+    uint constant maxCoopSeat = 20;
 
     constructor() Ownable(msg.sender){
         allowers[msg.sender] = true;

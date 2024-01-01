@@ -47,7 +47,6 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
 
     // start from 1
     mapping(address => mapping(uint256 => CoopSeat)) coopSeats;
-    uint constant maxCoopSeat = 20;
     address immutable eggTokenAddress;
     address immutable litterTokenAddress;
     address immutable shellTokenAddress;
