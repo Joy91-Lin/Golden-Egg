@@ -47,15 +47,6 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
 
     // start from 1
     mapping(address => mapping(uint256 => CoopSeat)) coopSeats;
-    address immutable eggTokenAddress;
-    address immutable litterTokenAddress;
-    address immutable shellTokenAddress;
-
-    constructor(address eggToken, address litterToken, address shellToken)  {
-        eggTokenAddress = eggToken;
-        litterTokenAddress = litterToken;
-        shellTokenAddress = shellToken;
-    }
 
     function putUpHen(uint seatIndex, uint henId, bool forceExchange, uint feedAmount) public payable {
         exchangeCoopSeatsPreCheck(msg.sender, msg.value, seatIndex);
@@ -137,6 +128,7 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         if(value > 0){
             require(value == handlingFeeEther, "Incorrect fee.");
         } else{
+            uint256 handlingFeeEggToken = handlingFeeEther * IToken(eggTokenAddress).getRatioOfEth();
             require(IToken(eggTokenAddress).balanceOf(sender) >= handlingFeeEggToken, "Not enough egg token.");
             IToken(eggTokenAddress).burn(sender, handlingFeeEggToken);
         }

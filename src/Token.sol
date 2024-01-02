@@ -8,6 +8,7 @@ interface IToken{
     function decimals() external view returns(uint8);
     function totalSupply() external view returns(uint256);
     function balanceOf(address account) external view returns(uint256);
+    function getRatioOfEth() external view returns(uint256);
     /** Admin only **/
     function transfer(address from, address to, uint256 value) external;
     function mint(address account, uint256 value) external;
@@ -54,10 +55,12 @@ contract Token is  ITokenError, ITokenEvent, IToken, GoldenCore{
     uint256 private _totalSupply;
     string private _name;
     string private _symbol;
+    uint256 private ratioOfEth;
     
-    constructor(string memory name_, string memory symbol_) {
+    constructor(string memory name_, string memory symbol_, uint256 _ratioOfEth) {
         _name = name_;
         _symbol = symbol_;
+        ratioOfEth = _ratioOfEth;
     }
 
     function name() public view returns (string memory) {
@@ -80,6 +83,13 @@ contract Token is  ITokenError, ITokenEvent, IToken, GoldenCore{
         return _balances[account];
     }
 
+    function setRatioOfEth(uint256 _ratioOfEth) public onlyAdmin{
+        ratioOfEth = _ratioOfEth;
+    }
+
+    function getRatioOfEth() public view returns(uint256){
+        return ratioOfEth;
+    }
 
     function transfer(address from, address to, uint256 value) public onlyAdmin {
         if (from == address(0)) {

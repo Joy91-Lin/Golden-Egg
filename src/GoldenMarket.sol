@@ -5,20 +5,11 @@ import "./WatchDog.sol";
 import "./Token.sol";
 
 contract GoldenMarket is BirthFactory {
-    address immutable chickenCoopAddress;
-    address immutable watchDogAddress;
-    address immutable eggTokenAddress;
-    address immutable litterTokenAddress;
-    address immutable shellTokenAddress;
     uint256 constant maxDurabilityOfProtectNumber = 10;
     uint256 constant unitTrashCanSpace = 100;
-    // uint256 constant unitEthPrice = 0.0001 ether;
     uint256 constant MANTISSA = 10 ** 18;
     uint256 constant maxPurchaseLimit = 10;
     struct Price {
-        uint256 ratioOfEthToEggToken;
-        uint256 rationOfEthToShellToken;
-        uint256 ratioOfEthToLitterToken;
         uint256 addProtectNumberEthPrice;
         uint256 removeProtectNumberEthPrice;
         uint256 trashCanEthPrice;
@@ -28,23 +19,9 @@ contract GoldenMarket is BirthFactory {
     uint private priceModel;
     Price[] sellPrices;
 
-    constructor(
-        address chickenCoop,
-        address watchDog,
-        address eggToken,
-        address litterToken,
-        address shellToken
-    ) {
-        chickenCoopAddress = chickenCoop;
-        watchDogAddress = watchDog;
-        eggTokenAddress = eggToken;
-        litterTokenAddress = litterToken;
-        shellTokenAddress = shellToken;
+    constructor() {
         sellPrices.push(
             Price({
-                ratioOfEthToEggToken: 1000,
-                rationOfEthToShellToken: 500,
-                ratioOfEthToLitterToken: 800,
                 addProtectNumberEthPrice: 0.0003 ether,
                 removeProtectNumberEthPrice: 0.0001 ether,
                 trashCanEthPrice: 0.0001 ether,
@@ -54,9 +31,6 @@ contract GoldenMarket is BirthFactory {
     }
 
     function setSellPrice(
-        uint256 _ratioOfEthToEggToken,
-        uint256 _rationOfEthToShellToken,
-        uint256 _ratioOfEthToLitterToken,
         uint256 _addProtectNumberEthPrice,
         uint256 _removeProtectNumberEthPrice,
         uint256 _trashCanEthPrice,
@@ -64,9 +38,6 @@ contract GoldenMarket is BirthFactory {
     ) public onlyAdmin returns (uint) {
         sellPrices.push(
             Price({
-                ratioOfEthToEggToken: _ratioOfEthToEggToken,
-                rationOfEthToShellToken: _rationOfEthToShellToken,
-                ratioOfEthToLitterToken: _ratioOfEthToLitterToken,
                 addProtectNumberEthPrice: _addProtectNumberEthPrice,
                 removeProtectNumberEthPrice: _removeProtectNumberEthPrice,
                 trashCanEthPrice: _trashCanEthPrice,
@@ -184,7 +155,7 @@ contract GoldenMarket is BirthFactory {
         require(msg.value > 0, "ETH value must be greater than 0.");
         require(!IWatchDog(watchDogAddress).isBeingAttack(msg.sender), "You are being attacked.");
         
-        uint256 eggTokenAmount = msg.value * getSellPrice().ratioOfEthToEggToken;
+        uint256 eggTokenAmount = msg.value * IToken(eggTokenAddress).getRatioOfEth();
         IToken(eggTokenAddress).mint(msg.sender, eggTokenAmount);
         if (_payIncentive) {
             IChickenCoop(chickenCoopAddress).payIncentive(msg.sender);
@@ -196,7 +167,7 @@ contract GoldenMarket is BirthFactory {
         isAccountJoinGame(msg.sender);
         require(msg.value > 0, "ETH value must be greater than 0.");
         require(!IWatchDog(watchDogAddress).isBeingAttack(msg.sender), "You are being attacked.");
-        uint256 litterTokenAmount = msg.value * getSellPrice().ratioOfEthToLitterToken;
+        uint256 litterTokenAmount = msg.value * IToken(litterTokenAddress).getRatioOfEth();
         require(litterTokenAmount <= IToken(litterTokenAddress).balanceOf(msg.sender), "Invaild amount");
 
         IToken(litterTokenAddress).burn(msg.sender, litterTokenAmount);
@@ -210,7 +181,7 @@ contract GoldenMarket is BirthFactory {
         isAccountJoinGame(msg.sender);
         require(msg.value > 0, "ETH value must be greater than 0.");
 
-        uint256 shellTokenAmount = msg.value * getSellPrice().rationOfEthToShellToken;
+        uint256 shellTokenAmount = msg.value * IToken(shellTokenAddress).getRatioOfEth();
         IToken(shellTokenAddress).mint(msg.sender, shellTokenAmount);
         if (_payIncentive) {
             IChickenCoop(chickenCoopAddress).payIncentive(msg.sender);
@@ -276,7 +247,7 @@ contract GoldenMarket is BirthFactory {
         if(value > 0){
             require(value == ethPrice, "Incorrect ETH value.");
         } else {
-            uint eggTokenPrice = ethPrice * getSellPrice().ratioOfEthToEggToken;
+            uint eggTokenPrice = ethPrice * IToken(eggTokenAddress).getRatioOfEth();
             require(
                 IToken(eggTokenAddress).balanceOf(buyer) >= eggTokenPrice,
                 "Insufficient egg balance."

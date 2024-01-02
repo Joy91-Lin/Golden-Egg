@@ -52,11 +52,17 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
     uint constant BLOCKAMOUNT = 40_000; // around 7 days if creating a block take 15 second
     mapping(address => bool) internal allowers;
 
-    uint constant handlingFeeEggToken = 1000;
     uint constant handlingFeeEther = 0.0001 ether;
     uint256 constant attackRange = 100;
     uint256 immutable maxTotalProtectNumbers = attackRange / 2;
     uint constant maxCoopSeat = 20;
+
+    address internal eggTokenAddress;
+    address internal litterTokenAddress;
+    address internal shellTokenAddress;
+    address internal chickenCoopAddress;
+    address internal watchDogAddress;
+    address internal birthFactoryAddress;
 
     constructor() Ownable(msg.sender){
         allowers[msg.sender] = true;
@@ -80,6 +86,22 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
 
     function isAdmin(address account) public view returns (bool){
         return allowers[account];
+    }
+
+    function setUpAddress(
+        address _eggTokenAddress,
+        address _litterTokenAddress,
+        address _shellTokenAddress,
+        address _chickenCoopAddress,
+        address _watchDogAddress,
+        address _birthFactoryAddress
+    ) public onlyOwner{
+        eggTokenAddress = _eggTokenAddress;
+        litterTokenAddress = _litterTokenAddress;
+        shellTokenAddress = _shellTokenAddress;
+        chickenCoopAddress = _chickenCoopAddress;
+        watchDogAddress = _watchDogAddress;
+        birthFactoryAddress = _birthFactoryAddress;
     }
 
     function startGame() public{

@@ -43,10 +43,6 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         Completed
     }
 
-    address immutable chickenCoopAddress;
-    address immutable eggTokenAddress;
-    address immutable litterTokenAddress;
-    address immutable shellTokenAddress;
     mapping(address => WatchDogInfo) public watchDogInfos;
     uint256 constant maxOpenShellPeriod = 1000;
     uint256 constant cooldownPeriod = 100;
@@ -67,13 +63,7 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
     uint256 constant targetShellReward = 100;
     uint256 constant closeFactorMantissa = 0.2 * 10 ** 18;
 
-    constructor(address chickenCoop, address eggToken, address litterToken, address shellToken)
-        VRFV2WrapperConsumerBase(linkAddress, vrfWrapperAddress) {
-        chickenCoopAddress = chickenCoop;
-        eggTokenAddress = eggToken;
-        litterTokenAddress = litterToken;
-        shellTokenAddress = shellToken;
-    }
+    constructor() VRFV2WrapperConsumerBase(linkAddress, vrfWrapperAddress) {}
 
     function changeWatchDog(uint256 id, bool forceExchange) public payable {
         WatchDogInfo memory watchDog = watchDogInfos[msg.sender];
@@ -103,6 +93,7 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         if(value > 0){
             require(value == handlingFeeEther, "Incorrect fee.");
         } else{
+            uint256 handlingFeeEggToken = handlingFeeEther * IToken(eggTokenAddress).getRatioOfEth();
             require(IToken(eggTokenAddress).balanceOf(sender) >= handlingFeeEggToken, "Not enough egg token.");
             IToken(eggTokenAddress).burn(sender, handlingFeeEggToken);
         }

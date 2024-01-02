@@ -35,7 +35,7 @@ contract BirthFactory is GoldenCore {
     uint256 totalHenCharacters;
     uint256 totalDogCharacters;
 
-    /** owner only **/
+    /** admin only **/
     function createHen(
         uint256 _layingCycle,
         uint256 _consumeFoodForOneBlock,
@@ -148,6 +148,11 @@ contract BirthFactory is GoldenCore {
 
     function checkDogExists(uint256 _dogId) internal view {
         require(_dogId <= totalDogCharacters, "dogId not exists");
+    }
+
+    function getMaxHenFoodIntake(uint256 _henId) public view returns (uint256) {
+        checkHenExists(_henId);
+        return hensCatalog[_henId].maxFoodIntake;
     }
 
 }
