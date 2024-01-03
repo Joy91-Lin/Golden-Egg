@@ -40,7 +40,8 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
     enum AttackStatus {
         None,
         Pending,
-        Completed
+        Completed,
+        Revert
     }
 
     mapping(address => WatchDogInfo) public watchDogInfos;
@@ -65,7 +66,52 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
 
     constructor() VRFV2WrapperConsumerBase(linkAddress, vrfWrapperAddress) {}
 
+    /** startGame **/
+    uint256 constant initTrashCan = 50;
+    uint256 constant initCoopSeats = 1;
+    uint256 constant initFirstHen = 1;
+    uint256 constant initFirstWatchDog = 1;
+    uint256 constant initProtectNumbers = 1;
+    uint256 constant initProtectShellBlockAmount = 250;
+    uint256 constant initDebtEggToken = 0;
+    uint256 constant initEggTokenAmount = 30000;
+    uint256 constant initShellTokenAmount = 300;
+    uint256 constant initDurabilityOfProtectNumber = 10;
+
+    function startGame() public{
+        require(accountInfos[msg.sender].lastActionBlockNumber == 0, "This address have joined Golden-Egg.");
+        watchDogInfos[msg.sender].status = AttackStatus.Revert;
+        setAccountActionModifyBlock(msg.sender, AccountAction.StartGame);
+
+        accountInfos[msg.sender].totalCoopSeats = initCoopSeats;
+        accountInfos[msg.sender].totalTrashCan = initTrashCan;
+        accountInfos[msg.sender].totalOwnHens[initFirstHen] = 1;
+        accountInfos[msg.sender].totalOwnWatchDogs[initFirstWatchDog] = true;
+        accountInfos[msg.sender].totalProtectNumbers = initProtectNumbers;
+        uint256 initProtectNumber = (uint(keccak256(abi.encodePacked(block.timestamp, msg.sender))) % attackRange) + 1;
+        accountInfos[msg.sender].protectNumbers[initProtectNumber] = initDurabilityOfProtectNumber;
+        accountInfos[msg.sender].lastPayIncentiveBlockNumber = getCurrentBlockNumber();
+        accountInfos[msg.sender].lastCheckHenIndex = 0;
+        accountInfos[msg.sender].debtEggToken = initDebtEggToken;
+
+        IToken(eggTokenAddress).mint(msg.sender, initEggTokenAmount);
+        IToken(shellTokenAddress).mint(msg.sender, initShellTokenAmount);
+        uint fullFirstHen = hensCatalog[initFirstHen].maxFoodIntake;
+        IChickenCoop(chickenCoopAddress).putUpHen(1, 1, true, fullFirstHen);
+        changeWatchDog(1, true);
+        initProtectShellForBeginer(initProtectShellBlockAmount);
+    }
+
+    function initProtectShellForBeginer(uint amount) internal {
+        uint256 currentBlock = getCurrentBlockNumber();
+        watchDogInfos[msg.sender].protectShellStartBlockNumber = currentBlock - openShellGap ;
+        watchDogInfos[msg.sender].protectShellEndBlockNumber = currentBlock + openShellGap + amount;
+        watchDogInfos[msg.sender].status = AttackStatus.None;
+        emit OpenProtectShell(msg.sender, currentBlock + cooldownPeriod, currentBlock + openShellGap + amount);
+    }
+
     function changeWatchDog(uint256 id, bool forceExchange) public payable {
+        isAccountJoinGame(msg.sender);
         WatchDogInfo memory watchDog = watchDogInfos[msg.sender];
         require(watchDog.status != AttackStatus.Pending, "You are being attack.");
         require(id > totalDogCharacters, "Invalid watch dog id.");
@@ -120,7 +166,8 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         setAccountActionModifyBlock(msg.sender, AccountAction.OpenProtectShell);
     }
 
-    function isProtectShellOpen(address target,uint currentBlock) public view returns(bool){
+    function isProtectShellOpen(address target) public view returns(bool){
+        uint currentBlock = getCurrentBlockNumber();
         WatchDogInfo memory watchDog = watchDogInfos[target];
         if(currentBlock >= watchDog.protectShellStartBlockNumber && currentBlock <= watchDog.protectShellEndBlockNumber){
             return true;
@@ -148,10 +195,10 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         require(checkActivated(target), "Target can not be attack.");
 
         // TODO : check target 防護罩是否開啟
-        require(!isProtectShellOpen(target, getCurrentBlockNumber()), "Target's protect shell is open!");
+        require(!isProtectShellOpen(target), "Target's protect shell is open!");
 
         // TODO : check target is not being attack
-        require(!isBeingAttack(target), "Target can not be attack now .");
+        require(canAttack(target), "Target can not be attack now .");
         watchDogInfos[target].status = AttackStatus.Pending;
 
         // TODO : target have egg token
@@ -298,7 +345,9 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         return attacks[requestId];
     }
 
-    function isBeingAttack(address target) public view returns(bool){
-        return watchDogInfos[target].status == AttackStatus.Pending;
+    function canAttack(address target) public view returns(bool){
+        if(watchDogInfos[target].status != AttackStatus.Pending && watchDogInfos[target].status != AttackStatus.Revert)
+            return true;
+        return false;
     }
 }
