@@ -56,14 +56,11 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
     uint256 constant attackRange = 100;
     uint256 immutable maxTotalProtectNumbers = attackRange / 2;
     uint constant maxCoopSeat = 20;
+    uint256 constant MANTISSA = 10 ** 18;
 
-    address internal eggTokenAddress;
-    address internal litterTokenAddress;
-    address internal shellTokenAddress;
-    address internal chickenCoopAddress;
-    address internal watchDogAddress;
-    address internal birthFactoryAddress;
-    address internal goldenMarketAddress;
+    address public eggTokenAddress;
+    address public litterTokenAddress;
+    address public shellTokenAddress;
 
     constructor() Ownable(msg.sender){
         allowers[msg.sender] = true;
@@ -92,60 +89,17 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
     function setUpAddress(
         address _eggTokenAddress,
         address _litterTokenAddress,
-        address _shellTokenAddress,
-        address _chickenCoopAddress,
-        address _watchDogAddress,
-        address _birthFactoryAddress,
-        address _goldenMarketAddress
+        address _shellTokenAddress
     ) public onlyOwner{
         eggTokenAddress = _eggTokenAddress;
         litterTokenAddress = _litterTokenAddress;
         shellTokenAddress = _shellTokenAddress;
-        chickenCoopAddress = _chickenCoopAddress;
-        watchDogAddress = _watchDogAddress;
-        birthFactoryAddress = _birthFactoryAddress;
         allowers[_eggTokenAddress] = true;
         allowers[_litterTokenAddress] = true;
         allowers[_shellTokenAddress] = true;
-        allowers[_chickenCoopAddress] = true;
-        allowers[_watchDogAddress] = true;
-        allowers[_birthFactoryAddress] = true;
-        allowers[_goldenMarketAddress] = true;
+        allowers[msg.sender] = true;
+        allowers[address(this)] = true;
     }
-
-    // function startGame() public{
-    //     require(accountInfos[msg.sender].lastActionBlockNumber == 0, "This address have joined Golden-Egg.");
-    //     setAccountActionModifyBlock(msg.sender, AccountAction.StartGame);
-
-    //     accountInfos[msg.sender].totalCoopSeats = 1;
-    //     accountInfos[msg.sender].totalTrashCan = 50;
-    //     accountInfos[msg.sender].totalOwnHens[1] = 1;
-    //     accountInfos[msg.sender].totalOwnWatchDogs[1] = true;
-    //     accountInfos[msg.sender].totalProtectNumbers = 1;
-    //     uint256 initProtectNumber = (uint(keccak256(abi.encodePacked(block.timestamp, msg.sender))) % attackRange) + 1;
-    //     accountInfos[msg.sender].protectNumbers[initProtectNumber] = 10;
-    //     accountInfos[msg.sender].lastPayIncentiveBlockNumber = getCurrentBlockNumber();
-    //     accountInfos[msg.sender].lastCheckHenIndex = 0;
-    //     accountInfos[msg.sender].debtEggToken = 0;
-        
-    //     (bool success, bytes memory data) = eggTokenAddress.call(abi.encodeWithSignature("mint(address,uint256)", msg.sender, 30000));
-    //     require(success, "mint egg token failed");
-    //     (success,) = shellTokenAddress.call(abi.encodeWithSignature("mint(address,uint256)", msg.sender, 300));
-    //     // put 1 hen into coop
-    //     (success, data) = birthFactoryAddress.call(abi.encodeWithSignature("getMaxHenFoodIntake(uint256)", 1));
-    //     require(success, "get max food intake failed");
-    //     uint256 maxFoodIntake = abi.decode(data, (uint256));
-    //     (success,) = chickenCoopAddress.call(abi.encodeWithSignature("putUpHen(uint,uint,bool,uint)", 
-    //                         1, 1, true, maxFoodIntake));
-    //     require(success, "put up hen failed");
-    //     // put 1 watch dog
-    //     (success,) = watchDogAddress.call(abi.encodeWithSignature("changeWatchDog(uint256,bool)", 1, true)); 
-    //     require(success, "put up watch dog failed");
-    //     // put protect shell for 250 blocks
-    //     (success,) = watchDogAddress.call(abi.encodeWithSignature("openProtectShell(uint256)", 250));
-    //     require(success, "open protect shell failed");
-
-    // }
 
     function setAccountActionModifyBlock(address account,AccountAction action) internal {
         uint256 currentBlockNumber = getCurrentBlockNumber();

@@ -57,10 +57,12 @@ contract Token is  ITokenError, ITokenEvent, IToken, GoldenCore{
     string private _symbol;
     uint256 private ratioOfEth;
     
-    constructor(string memory name_, string memory symbol_, uint256 _ratioOfEth) {
+    constructor(string memory name_, string memory symbol_, uint256 _ratioOfEth, address _goldenEggAddress) {
         _name = name_;
         _symbol = symbol_;
         ratioOfEth = _ratioOfEth;
+        allowers[msg.sender] = true;
+        allowers[_goldenEggAddress] = true;
     }
 
     function name() public view returns (string memory) {

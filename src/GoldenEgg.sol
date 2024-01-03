@@ -1,13 +1,11 @@
 pragma solidity ^0.8.21;
-import "./BirthFactory.sol";
 import "./ChickenCoop.sol";
 import "./WatchDog.sol";
 import "./Token.sol";
 
-contract GoldenMarket is BirthFactory {
+contract GoldenEgg is ChickenCoop, WatchDog {
     uint256 constant maxDurabilityOfProtectNumber = 10;
     uint256 constant unitTrashCanSpace = 100;
-    uint256 constant MANTISSA = 10 ** 18;
     uint256 constant maxPurchaseLimit = 10;
     struct Price {
         uint256 addProtectNumberEthPrice;
@@ -28,6 +26,44 @@ contract GoldenMarket is BirthFactory {
                 seatEthPrice: 0.0001 ether
             })
         );
+    }
+     /** startGame **/
+    uint256 immutable initTrashCan = 1000;
+    uint256 constant initCoopSeats = 1;
+    uint256 constant initCoopSeatIndex = 0;
+    uint256 constant initFirstHen = 0;
+    uint256 constant initFirstWatchDog = 0;
+    uint256 constant initProtectNumbers = 1;
+    uint256 constant initProtectShellBlockAmount = 250;
+    uint256 constant initDebtEggToken = 0;
+    uint256 constant initEggTokenAmount = 30_000 ether;
+    uint256 constant initShellTokenAmount = 300 ether;
+    uint256 constant initDurabilityOfProtectNumber = 10;
+
+    function startGame() public returns (uint256 initProtectNumber){
+        require(accountInfos[msg.sender].lastActionBlockNumber == 0, "This address have joined Golden-Egg.");
+        watchDogInfos[msg.sender].status = AttackStatus.Revert;
+        setAccountActionModifyBlock(msg.sender, AccountAction.StartGame);
+
+        accountInfos[msg.sender].totalCoopSeats = initCoopSeats;
+        accountInfos[msg.sender].totalTrashCan = initTrashCan * IToken(litterTokenAddress).decimals();
+        accountInfos[msg.sender].totalOwnHens[initFirstHen] = 1;
+        accountInfos[msg.sender].totalOwnWatchDogs[initFirstWatchDog] = true;
+        accountInfos[msg.sender].totalProtectNumbers = initProtectNumbers;
+        initProtectNumber = (uint(keccak256(abi.encodePacked(block.timestamp, msg.sender))) % attackRange) + 1;
+        accountInfos[msg.sender].protectNumbers[initProtectNumber] = initDurabilityOfProtectNumber;
+        accountInfos[msg.sender].lastPayIncentiveBlockNumber = getCurrentBlockNumber();
+        accountInfos[msg.sender].lastCheckHenIndex = 0;
+        accountInfos[msg.sender].debtEggToken = initDebtEggToken;
+
+        coopSeats[msg.sender][initCoopSeatIndex].isOpened = true;
+
+        IToken(eggTokenAddress).mint(msg.sender, initEggTokenAmount);
+        IToken(shellTokenAddress).mint(msg.sender, initShellTokenAmount);
+        uint fullFirstHen = hensCatalog[initFirstHen].maxFoodIntake;
+        putUpHen(initCoopSeatIndex, initFirstHen, true, fullFirstHen);
+        changeWatchDog(initFirstWatchDog, true);
+        initProtectShellForBeginer(initProtectShellBlockAmount);
     }
 
     function setSellPrice(
@@ -61,7 +97,7 @@ contract GoldenMarket is BirthFactory {
         checkHenBillAndDelivered(msg.sender, _henId, msg.value);
 
         if (_payIncentive) {
-            IChickenCoop(chickenCoopAddress).payIncentive(msg.sender);
+            payIncentive(msg.sender);
         }
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
     }
@@ -72,7 +108,7 @@ contract GoldenMarket is BirthFactory {
 
         checkDogBillAndDelivered(msg.sender, _dogId, msg.value);
         if (_payIncentive) {
-            IChickenCoop(chickenCoopAddress).payIncentive(msg.sender);
+            payIncentive(msg.sender);
         }
 
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
@@ -82,7 +118,7 @@ contract GoldenMarket is BirthFactory {
         isAccountJoinGame(msg.sender);
         require(accountInfos[msg.sender].totalProtectNumbers < maxTotalProtectNumbers, "You have reached the maximum number of purchases.");
         require(accountInfos[msg.sender].protectNumbers[_protectNumber] == 0, "You already bought this protect number.");
-        require(!IWatchDog(watchDogAddress).isBeingAttack(msg.sender), "You are being attacked.");
+        require(!isAttackStatusPending(msg.sender), "You are being attacked.");
         require(_protectNumber > 0, "Protect number must be greater than 0.");
 
         bool success = checkBill(msg.sender, msg.value, getSellPrice().addProtectNumberEthPrice);
@@ -91,7 +127,7 @@ contract GoldenMarket is BirthFactory {
             accountInfos[msg.sender].protectNumbers[_protectNumber] = maxDurabilityOfProtectNumber;
         }
         if (_payIncentive) {
-            IChickenCoop(chickenCoopAddress).payIncentive(msg.sender);
+            payIncentive(msg.sender);
         }
 
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
@@ -100,7 +136,7 @@ contract GoldenMarket is BirthFactory {
     function removeProtectNumber(uint256 _protectNumber, bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         require(accountInfos[msg.sender].protectNumbers[_protectNumber] > 0, "You don't have this protect number.");
-        require(!IWatchDog(watchDogAddress).isBeingAttack(msg.sender), "You are being attacked.");
+        require(!isAttackStatusPending(msg.sender), "You are being attacked.");
         require(_protectNumber > 0, "Protect number must be greater than 0.");
 
         bool success = checkBill(msg.sender, msg.value, getSellPrice().removeProtectNumberEthPrice);
@@ -109,7 +145,7 @@ contract GoldenMarket is BirthFactory {
             accountInfos[msg.sender].protectNumbers[_protectNumber] = 0;
         }
         if (_payIncentive) {
-            IChickenCoop(chickenCoopAddress).payIncentive(msg.sender);
+            payIncentive(msg.sender);
         }
 
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
@@ -119,7 +155,7 @@ contract GoldenMarket is BirthFactory {
         isAccountJoinGame(msg.sender);
         require(amount > 0, "Amount must be greater than 0.");
         require(amount <= maxPurchaseLimit, "Amount must be less than maxPurchaseLimit.");
-        require(!IWatchDog(watchDogAddress).isBeingAttack(msg.sender), "You are being attacked.");
+        require(!isAttackStatusPending(msg.sender), "You are being attacked.");
 
 
         bool success = checkBill(msg.sender, msg.value, getSellPrice().trashCanEthPrice * amount);
@@ -127,7 +163,7 @@ contract GoldenMarket is BirthFactory {
             accountInfos[msg.sender].totalTrashCan += amount * unitTrashCanSpace;
         }
         if(_payIncentive){
-            IChickenCoop(chickenCoopAddress).payIncentive(msg.sender);
+            payIncentive(msg.sender);
         }
 
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
@@ -145,7 +181,7 @@ contract GoldenMarket is BirthFactory {
             accountInfos[msg.sender].totalCoopSeats += amount;
         }
         if (_payIncentive) {
-            IChickenCoop(chickenCoopAddress).payIncentive(msg.sender);
+            payIncentive(msg.sender);
         }
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
     }
@@ -153,12 +189,12 @@ contract GoldenMarket is BirthFactory {
     function buyEggToken(bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         require(msg.value > 0, "ETH value must be greater than 0.");
-        require(!IWatchDog(watchDogAddress).isBeingAttack(msg.sender), "You are being attacked.");
+        require(!isAttackStatusPending(msg.sender), "You are being attacked.");
         
         uint256 eggTokenAmount = msg.value * IToken(eggTokenAddress).getRatioOfEth();
         IToken(eggTokenAddress).mint(msg.sender, eggTokenAmount);
         if (_payIncentive) {
-            IChickenCoop(chickenCoopAddress).payIncentive(msg.sender);
+            payIncentive(msg.sender);
         }
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
     }
@@ -166,13 +202,13 @@ contract GoldenMarket is BirthFactory {
     function cleanLitter(bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         require(msg.value > 0, "ETH value must be greater than 0.");
-        require(!IWatchDog(watchDogAddress).isBeingAttack(msg.sender), "You are being attacked.");
+        require(!isAttackStatusPending(msg.sender), "You are being attacked.");
         uint256 litterTokenAmount = msg.value * IToken(litterTokenAddress).getRatioOfEth();
         require(litterTokenAmount <= IToken(litterTokenAddress).balanceOf(msg.sender), "Invaild amount");
 
         IToken(litterTokenAddress).burn(msg.sender, litterTokenAmount);
         if (_payIncentive) {
-            IChickenCoop(chickenCoopAddress).payIncentive(msg.sender);
+            payIncentive(msg.sender);
         }
         setAccountActionModifyBlock(msg.sender, AccountAction.CleanCoop);
     }
@@ -184,7 +220,7 @@ contract GoldenMarket is BirthFactory {
         uint256 shellTokenAmount = msg.value * IToken(shellTokenAddress).getRatioOfEth();
         IToken(shellTokenAddress).mint(msg.sender, shellTokenAmount);
         if (_payIncentive) {
-            IChickenCoop(chickenCoopAddress).payIncentive(msg.sender);
+            payIncentive(msg.sender);
         }
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
     }

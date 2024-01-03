@@ -28,12 +28,11 @@ contract BirthFactory is GoldenCore {
         uint256 eggPrice;
         bool isOnSale;
     }
-    // start from 1
     mapping(uint256 => HenCharacter) public hensCatalog;
     mapping(uint256 => DogCharacter) public dogsCatalog;
 
-    uint256 totalHenCharacters;
-    uint256 totalDogCharacters;
+    uint256 public totalHenCharacters = 0;
+    uint256 public totalDogCharacters = 0;
 
     /** admin only **/
     function createHen(
@@ -48,7 +47,6 @@ contract BirthFactory is GoldenCore {
         uint256 _eggPrice,
         bool _isOnSale
     ) public onlyAdmin {
-        totalHenCharacters++;
         hensCatalog[totalHenCharacters] = HenCharacter({
             layingCycle: _layingCycle,
             consumeFoodForOneBlock: _consumeFoodForOneBlock,
@@ -62,6 +60,7 @@ contract BirthFactory is GoldenCore {
             isOnSale: _isOnSale
         });
         emit BirthHen(totalHenCharacters, _isOnSale);
+        totalHenCharacters++;
     }
 
     function adjustHen(
@@ -98,13 +97,13 @@ contract BirthFactory is GoldenCore {
         uint256 _eggPrice,
         bool _isOnSale
     ) public onlyAdmin {
-        totalDogCharacters++;
         dogsCatalog[totalDogCharacters].rewardPercentageMantissa = _rewardPercentage * 1e16;
         dogsCatalog[totalDogCharacters].dumpPercentageMantissa = _dumpPercentage * 1e16;
         dogsCatalog[totalDogCharacters].ethPrice = _ethPrice;
         dogsCatalog[totalDogCharacters].eggPrice = _eggPrice;
         dogsCatalog[totalDogCharacters].isOnSale = _isOnSale;
         emit BirthDog(totalDogCharacters, _isOnSale);
+        totalDogCharacters++;
     }
 
     function adjustDog(

@@ -45,7 +45,6 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         uint256 maxFoodIntake;
     }
 
-    // start from 1
     mapping(address => mapping(uint256 => CoopSeat)) coopSeats;
 
     function putUpHen(uint seatIndex, uint henId, bool forceExchange, uint feedAmount) public payable {
@@ -105,7 +104,7 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
     }
 
     function ownHenId(address sender, uint henId) internal view {
-        require(henId > totalHenCharacters, "Invalid hen id.");
+        require(hensCatalog[henId].layingCycle > 0, "Invalid hen id.");
         uint256 totalHen = accountInfos[sender].totalOwnHens[henId];
         uint256 henInCoop = accountInfos[sender].hensInCoop[henId];
         require(totalHen - henInCoop > 0 , "Insufficient Hen.");
@@ -119,8 +118,6 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
 
 
     function checkSeatExist(address sender, uint index) internal view {
-        uint256 totalSeat = accountInfos[sender].totalCoopSeats;
-        require(index > totalSeat, "Seat index have not been opened.");
         require(coopSeats[sender][index].isOpened, "Seat is not opened.");
     }
 
@@ -278,7 +275,7 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         nowShellAmount = totalProtectShell - preShellAmount;
 
         if(nowShellAmount > 0){
-            IToken(shellTokenAddress).mint(target, nowShellAmount);
+            IToken(shellTokenAddress).mint(target, nowShellAmount * IToken(shellTokenAddress).decimals());
         }
 
         coopSeats[target][seatIndex].layingTimes = totalLayingTimes;

@@ -7,7 +7,7 @@ import "./ChickenCoop.sol";
 import "./Token.sol";
 
 interface IWatchDog {
-    function isBeingAttack(address target) external view returns(bool);
+    function isAttackStatusPending(address target) external view returns(bool);
 }
 interface IAttckGameEvent{
     event AttackRequest(uint256 indexed requestId, address indexed requester, address indexed target);
@@ -55,7 +55,6 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
     uint32 constant callbackGasLimit = 1_000_000;
     uint32 constant numWords = 1;
     uint16 constant requestConfirmations = 10; // give victimn 10 blocks to protect their coop
-    uint256 constant MANTISSA = 10 ** 18;
     uint256 constant attackFeeMantissa = 1.03 * 10 ** 18;
     mapping(uint256 => Attack) public attacks;
     uint256 constant minEggTokenReward = 300;
@@ -65,42 +64,6 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
     uint256 constant closeFactorMantissa = 0.2 * 10 ** 18;
 
     constructor() VRFV2WrapperConsumerBase(linkAddress, vrfWrapperAddress) {}
-
-    /** startGame **/
-    uint256 constant initTrashCan = 50;
-    uint256 constant initCoopSeats = 1;
-    uint256 constant initFirstHen = 1;
-    uint256 constant initFirstWatchDog = 1;
-    uint256 constant initProtectNumbers = 1;
-    uint256 constant initProtectShellBlockAmount = 250;
-    uint256 constant initDebtEggToken = 0;
-    uint256 constant initEggTokenAmount = 30000;
-    uint256 constant initShellTokenAmount = 300;
-    uint256 constant initDurabilityOfProtectNumber = 10;
-
-    function startGame() public{
-        require(accountInfos[msg.sender].lastActionBlockNumber == 0, "This address have joined Golden-Egg.");
-        watchDogInfos[msg.sender].status = AttackStatus.Revert;
-        setAccountActionModifyBlock(msg.sender, AccountAction.StartGame);
-
-        accountInfos[msg.sender].totalCoopSeats = initCoopSeats;
-        accountInfos[msg.sender].totalTrashCan = initTrashCan;
-        accountInfos[msg.sender].totalOwnHens[initFirstHen] = 1;
-        accountInfos[msg.sender].totalOwnWatchDogs[initFirstWatchDog] = true;
-        accountInfos[msg.sender].totalProtectNumbers = initProtectNumbers;
-        uint256 initProtectNumber = (uint(keccak256(abi.encodePacked(block.timestamp, msg.sender))) % attackRange) + 1;
-        accountInfos[msg.sender].protectNumbers[initProtectNumber] = initDurabilityOfProtectNumber;
-        accountInfos[msg.sender].lastPayIncentiveBlockNumber = getCurrentBlockNumber();
-        accountInfos[msg.sender].lastCheckHenIndex = 0;
-        accountInfos[msg.sender].debtEggToken = initDebtEggToken;
-
-        IToken(eggTokenAddress).mint(msg.sender, initEggTokenAmount);
-        IToken(shellTokenAddress).mint(msg.sender, initShellTokenAmount);
-        uint fullFirstHen = hensCatalog[initFirstHen].maxFoodIntake;
-        IChickenCoop(chickenCoopAddress).putUpHen(1, 1, true, fullFirstHen);
-        changeWatchDog(1, true);
-        initProtectShellForBeginer(initProtectShellBlockAmount);
-    }
 
     function initProtectShellForBeginer(uint amount) internal {
         uint256 currentBlock = getCurrentBlockNumber();
@@ -114,7 +77,6 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         isAccountJoinGame(msg.sender);
         WatchDogInfo memory watchDog = watchDogInfos[msg.sender];
         require(watchDog.status != AttackStatus.Pending, "You are being attack.");
-        require(id > totalDogCharacters, "Invalid watch dog id.");
         require(accountInfos[msg.sender].totalOwnWatchDogs[id], "You don't have this watch dog.");
         checkFee(msg.sender, msg.value);
 
@@ -148,7 +110,8 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
     function openProtectShell(uint amount) public payable{
         uint balance = IToken(shellTokenAddress).balanceOf(msg.sender);
         // check input amount
-        require(amount <= balance, "You don't have enough shell token.");
+        uint burnAmount = amount * IToken(shellTokenAddress).decimals();
+        require(burnAmount  <= balance, "You don't have enough shell token.");
         require(amount <= maxOpenShellPeriod, "You can not open protect shell for so long.");
 
         checkFee(msg.sender, msg.value);
@@ -160,7 +123,7 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
 
         watchDogInfos[msg.sender].protectShellStartBlockNumber = currentBlock + openShellGap ;
         watchDogInfos[msg.sender].protectShellEndBlockNumber = currentBlock + openShellGap + amount;
-        IToken(shellTokenAddress).burn(msg.sender, amount);
+        IToken(shellTokenAddress).burn(msg.sender, burnAmount);
 
         emit OpenProtectShell(msg.sender, currentBlock + cooldownPeriod, currentBlock + openShellGap + amount);
         setAccountActionModifyBlock(msg.sender, AccountAction.OpenProtectShell);
@@ -256,7 +219,6 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         } else {
             // attack success
             attackResult = true;
-            IChickenCoop(chickenCoopAddress).payIncentive(attackInfo.target);
             giveRewardToAttacker(requestId);
             helpTargetOpenProtectShell(requestId);
         }
@@ -347,6 +309,12 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
 
     function canAttack(address target) public view returns(bool){
         if(watchDogInfos[target].status != AttackStatus.Pending && watchDogInfos[target].status != AttackStatus.Revert)
+            return true;
+        return false;
+    }
+
+    function isAttackStatusPending(address target) public view returns(bool){
+        if(watchDogInfos[target].status == AttackStatus.Pending)
             return true;
         return false;
     }
