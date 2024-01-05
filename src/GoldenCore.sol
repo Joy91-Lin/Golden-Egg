@@ -1,6 +1,6 @@
 pragma solidity ^0.8.21;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import "./AdminControl.sol";
 
 interface IGoldenCore{
     function checkActivated(address account) external view returns (bool);
@@ -15,11 +15,10 @@ interface IGoldenCoreEvent{
 }
 
 interface IGoldenCoreError{
-    error SenderMustBeAdmin(address caller);
     error TargetDoesNotJoinGameYet(address target);
 }
  
-contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError {
+contract GoldenCore is IGoldenCore, IGoldenCoreEvent, IGoldenCoreError,AdminControl {
     enum AccountAction{
         StartGame,
         HelpOthers,
@@ -48,9 +47,8 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
     }
 
     address private constant adminAddress = 0x4ff1B1f7b28345eFC5e8f628A19e96c34696dbF0;
-    mapping(address => AccountInfo) internal accountInfos;
+    mapping(address => AccountInfo) accountInfos;
     uint constant BLOCKAMOUNT = 40_000; // around 7 days if creating a block take 15 second
-    mapping(address => bool) internal allowers;
 
     uint constant handlingFeeEther = 0.0001 ether;
     uint256 constant attackRange = 100;
@@ -61,30 +59,6 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
     address public eggTokenAddress;
     address public litterTokenAddress;
     address public shellTokenAddress;
-
-    constructor() Ownable(msg.sender){
-        allowers[msg.sender] = true;
-        allowers[address(this)] = true;
-    }
-
-    modifier onlyAdmin() {
-        if(allowers[msg.sender])
-            _;
-        else
-            revert SenderMustBeAdmin(msg.sender);
-    }
-
-    function addAdmin(address account) public onlyOwner {
-        allowers[account] = true;
-    }
-
-    function removeAdmin(address account) public onlyOwner {
-        allowers[account] = false;
-    }
-
-    function isAdmin(address account) public view returns (bool){
-        return allowers[account];
-    }
 
     function setUpAddress(
         address _eggTokenAddress,
@@ -110,7 +84,7 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
 
     function checkActivated(address account) public view returns (bool){
         uint accountLastModifyBlockNumber = accountInfos[account].lastActionBlockNumber;
-        require(accountLastModifyBlockNumber == 0, "This address haven't join Golden-Egg.");
+        require(accountLastModifyBlockNumber == 0, "GoldenTop: This address haven't join Golden-Egg.");
         
         uint around7days = getCurrentBlockNumber() - BLOCKAMOUNT;
         if(accountLastModifyBlockNumber > around7days){
@@ -118,10 +92,6 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
         } else{
             return false;
         }
-    }
-
-    function getAccountLastModifyBlockNumber(address account) public view returns(uint){
-        return accountInfos[account].lastActionBlockNumber;
     }
 
     function getCurrentBlockNumber() public view returns (uint256){
@@ -133,8 +103,49 @@ contract GoldenCore is Ownable, IGoldenCore, IGoldenCoreEvent, IGoldenCoreError 
             revert TargetDoesNotJoinGameYet(account);
         return true;
     }
+    /** struct AccountInfo **/
+    function getAccountTotalCoopSeats(address account) public view returns (uint256){
+        return accountInfos[account].totalCoopSeats;
+    }
 
     function getTotalTrashCanAmount(address account) public view returns (uint256){
         return accountInfos[account].totalTrashCan;
     }
+
+    function getAccountTotalOwnHens(address account, uint256 henId) public view returns (uint256){
+        return accountInfos[account].totalOwnHens[henId];
+    }
+
+    function getAccountHensInCoop(address account, uint256 henId) public view returns (uint256){
+        return accountInfos[account].hensInCoop[henId];
+    }
+
+    function getAccountTotalOwnWatchDogs(address account, uint256 dogId) public view returns (bool){
+        return accountInfos[account].totalOwnWatchDogs[dogId];
+    }
+
+    function getAccountTotalProtectNumbers(address account) public view returns (uint256){
+        return accountInfos[account].totalProtectNumbers;
+    }
+
+    function getAccountProtectNumbers(address account, uint256 protectNumber) public view returns (uint256){
+        return accountInfos[account].protectNumbers[protectNumber];
+    }
+
+    function getAccountLastModifyBlockNumber(address account) public view returns(uint){
+        return accountInfos[account].lastActionBlockNumber;
+    }
+
+    function getAccountLastPayIncentiveBlockNumber(address account) public view returns(uint){
+        return accountInfos[account].lastPayIncentiveBlockNumber;
+    }
+
+    function getAccountLastCheckHenIndex(address account) public view returns(uint){
+        return accountInfos[account].lastCheckHenIndex;
+    }
+
+    function getAccountDebtEggToken(address account) public view returns(uint){
+        return accountInfos[account].debtEggToken;
+    }
+
 }

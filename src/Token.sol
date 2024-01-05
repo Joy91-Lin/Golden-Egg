@@ -1,6 +1,6 @@
 pragma solidity ^0.8.21;
 
-import {GoldenCore} from "./GoldenCore.sol";
+import "./AdminControl.sol";
 
 interface IToken{
     function name() external view returns (string memory);
@@ -50,7 +50,7 @@ interface ITokenEvent{
     event Transfer(address indexed from, address indexed to, uint256 value);
 }
 
-contract Token is  ITokenError, ITokenEvent, IToken, GoldenCore{
+contract Token is  ITokenError, ITokenEvent, IToken, AdminControl{
     mapping(address account => uint256) private _balances;
     uint256 private _totalSupply;
     string private _name;

@@ -28,8 +28,8 @@ contract BirthFactory is GoldenCore {
         uint256 eggPrice;
         bool isOnSale;
     }
-    mapping(uint256 => HenCharacter) public hensCatalog;
-    mapping(uint256 => DogCharacter) public dogsCatalog;
+    mapping(uint256 => HenCharacter) hensCatalog;
+    mapping(uint256 => DogCharacter) dogsCatalog;
 
     uint256 public totalHenCharacters = 0;
     uint256 public totalDogCharacters = 0;
@@ -142,16 +142,22 @@ contract BirthFactory is GoldenCore {
     }
 
     function checkHenExists(uint256 _henId) internal view {
-        require(_henId <= totalHenCharacters, "henId not exists");
+        require(_henId <= totalHenCharacters, "BirthFactory: henId not exists");
     }
 
     function checkDogExists(uint256 _dogId) internal view {
-        require(_dogId <= totalDogCharacters, "dogId not exists");
+        require(_dogId <= totalDogCharacters, "BirthFactory: dogId not exists");
     }
 
-    function getMaxHenFoodIntake(uint256 _henId) public view returns (uint256) {
+    /** struct HenCharacter **/
+    function getHenCatalog(uint _henId) public view returns (HenCharacter memory){
         checkHenExists(_henId);
-        return hensCatalog[_henId].maxFoodIntake;
+        return hensCatalog[_henId];
     }
 
+    /** struct DogCharacter **/
+    function getDogCatalog(uint _dogId) public view returns (DogCharacter memory){
+        checkDogExists(_dogId);
+        return dogsCatalog[_dogId];
+    }
 }
