@@ -66,10 +66,10 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
 
     function initProtectShellForBeginer(uint amount) internal {
         uint256 currentBlock = getCurrentBlockNumber();
-        watchDogInfos[msg.sender].protectShellStartBlockNumber = currentBlock - openShellGap ;
+        watchDogInfos[msg.sender].protectShellStartBlockNumber = currentBlock;
         watchDogInfos[msg.sender].protectShellEndBlockNumber = currentBlock + openShellGap + amount;
         watchDogInfos[msg.sender].status = AttackStatus.None;
-        emit OpenProtectShell(msg.sender, currentBlock + cooldownPeriod, currentBlock + openShellGap + amount);
+        emit OpenProtectShell(msg.sender, currentBlock, currentBlock + openShellGap + amount);
     }
 
     function changeWatchDog(uint256 id, bool forceExchange) public payable {
@@ -124,7 +124,7 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
         watchDogInfos[msg.sender].protectShellEndBlockNumber = currentBlock + openShellGap + amount;
         IToken(shellTokenAddress).burn(msg.sender, burnAmount);
 
-        emit OpenProtectShell(msg.sender, currentBlock + cooldownPeriod, currentBlock + openShellGap + amount);
+        emit OpenProtectShell(msg.sender, currentBlock + openShellGap, currentBlock + openShellGap + amount);
         setAccountActionModifyBlock(msg.sender, AccountAction.OpenProtectShell);
     }
 
