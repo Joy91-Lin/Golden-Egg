@@ -85,7 +85,7 @@ contract GoldenEggTest is Test, GoldenEggScript {
         goldenEgg.isAccountJoinGame(nonJoinGame);
     }
 
-    function test_FeedHen()public{
+    function test_feedHen()public{
         vm.startPrank(user1);
         vm.expectRevert("ChickenCoop: Hen is full.");
         goldenEgg.feedOwnHen(0, 100);
@@ -104,9 +104,30 @@ contract GoldenEggTest is Test, GoldenEggScript {
         vm.expectRevert("ChickenCoop: seat is not opened");
         goldenEgg.helpFeedHen(user2, 1, 100);
 
-        
-
+        // digest some food
+        vm.roll(block.number + 1);
+        uint256 preFoodIntake = goldenEgg.getCoopSeatInfo(0, false).foodIntake;
+        uint consumeFood = goldenEgg.getHenCatalog(goldenEgg.getCoopSeatInfo(0, false).id).consumeFoodForOneBlock * 1;
+        goldenEgg.payIncentive(user1);
+        uint256 postFoodIntake = goldenEgg.getCoopSeatInfo(0, false).foodIntake;
+        assertEq(preFoodIntake - postFoodIntake, consumeFood);
         vm.stopPrank();
+
+        // feed hen
+        vm.startPrank(user1);
+        uint256 preBalance = eggToken.balanceOf(user1);
+        goldenEgg.feedOwnHen(0, 1 * 10 ** eggToken.decimals());   
+        assertEq(postFoodIntake + 1 * 10 ** eggToken.decimals(), goldenEgg.getCoopSeatInfo(0, false).foodIntake);
+        assertEq(1 * 10 ** eggToken.decimals(), preBalance - eggToken.balanceOf(user1));
+        vm.stopPrank();
+
+        // help feed others hen
+        vm.startPrank(user2);
+        preBalance = eggToken.balanceOf(user2);
+        goldenEgg.helpFeedHen(user1, 0, 2 * 10 ** eggToken.decimals());
+        assertEq(2 * 10 ** eggToken.decimals(), preBalance - eggToken.balanceOf(user2));
+        vm.stopPrank();
+
     }
 
 }
