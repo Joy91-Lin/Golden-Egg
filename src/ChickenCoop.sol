@@ -8,10 +8,10 @@ interface IChickenCoop{
     function takeDownHen(uint seatIndex, bool forceExchange) external payable;
     function helpFeedHen(address target, uint seatIndex, uint feedAmount) external;
     function feedOwnHen(uint seatIndex, uint feedAmount) external;
-    function showHenHunger(address target) external view returns (ChickenCoop.FoodIntake[] memory);
-    function showHenHunger(address target, uint seatIndex) external view returns (ChickenCoop.FoodIntake memory);
-    function getSeatStatus(bool _payIncentive) external returns (ChickenCoop.CoopSeat[] memory);
-    function getSeatStatus(uint seatIndex, bool _payIncentive) external returns (ChickenCoop.CoopSeat memory);
+    function getHenHunger(address target) external view returns (ChickenCoop.FoodIntake[] memory);
+    function getHenHunger(address target, uint seatIndex) external view returns (ChickenCoop.FoodIntake memory);
+    function getCoopSeatInfo(bool _payIncentive) external returns (ChickenCoop.CoopSeat[] memory);
+    function getCoopSeatInfo(uint seatIndex, bool _payIncentive) external returns (ChickenCoop.CoopSeat memory);
     function payIncentive(address target) external;
 }
 
@@ -146,6 +146,7 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         }
 
         // check all coop seat
+        isAccountJoinGame(target);
         uint gasUsed;
         uint gasLeft = gasleft();
         uint256 totalSeat = accountInfo.totalCoopSeats;
@@ -336,7 +337,7 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         }
     }
 
-    function showHenHunger(address target) public view returns (FoodIntake[] memory){
+    function getHenHunger(address target) public view returns (FoodIntake[] memory){
         AccountInfo storage accountInfo = accountInfos[target];
         uint256 totalSeat = accountInfo.totalCoopSeats;
         isAccountJoinGame(target);
@@ -354,7 +355,7 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         return foodIntakes;
     }
 
-    function showHenHunger(address target, uint seatIndex) public view returns (FoodIntake memory){
+    function getHenHunger(address target, uint seatIndex) public view returns (FoodIntake memory){
         isAccountJoinGame(target);
         CoopSeat memory coopSeat = coopSeats[target][seatIndex];
         require(coopSeat.isOpened, "ChickenCoop: Invalid seat index.");
@@ -364,7 +365,7 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         return FoodIntake(seatIndex, true, coopSeat.id, coopSeat.foodIntake, hen.maxFoodIntake);
     }
 
-    function getSeatStatus(bool _payIncentive) public returns (CoopSeat[] memory){
+    function getCoopSeatInfo(bool _payIncentive) public returns (CoopSeat[] memory){
         AccountInfo storage accountInfo = accountInfos[msg.sender];
         uint256 totalSeat = accountInfo.totalCoopSeats;
         isAccountJoinGame(msg.sender);
@@ -380,7 +381,7 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         return coopSeatStatus;
     }
 
-    function getSeatStatus(uint seatIndex, bool _payIncentive) public returns (CoopSeat memory){
+    function getCoopSeatInfo(uint seatIndex, bool _payIncentive) public returns (CoopSeat memory){
         isAccountJoinGame(msg.sender);
         if(_payIncentive)
             payIncentive(msg.sender);

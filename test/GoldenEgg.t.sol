@@ -38,15 +38,15 @@ contract GoldenEggTest is Test, GoldenEggScript {
         // check enter game
         vm.startPrank(user1);
         uint initProtectNumber1 = goldenEgg.startGame();
-        assertEq(goldenEgg.getSeatStatus(false)[0].isOpened, true);
-        assertEq(goldenEgg.getSeatStatus(false)[0].isExisted, true);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].isOpened, true);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].isExisted, true);
         uint256 initFirstHen = goldenEgg.initFirstHen();
-        assertEq(goldenEgg.getSeatStatus(false)[0].id, initFirstHen);
-        assertEq(goldenEgg.getSeatStatus(false)[0].layingTimes, 0);
-        assertEq(goldenEgg.getSeatStatus(false)[0].protectShellCount, 0);
-        assertEq(goldenEgg.getSeatStatus(false)[0].foodIntake, goldenEgg.getHenCatalog(initFirstHen).maxFoodIntake);
-        assertEq(goldenEgg.getSeatStatus(false)[0].layingLeftCycle, goldenEgg.getHenCatalog(initFirstHen).layingCycle);
-        assertEq(goldenEgg.getSeatStatus(false)[0].lastCheckBlockNumberPerSeat, block.number);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].id, initFirstHen);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].layingTimes, 0);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].protectShellCount, 0);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].foodIntake, goldenEgg.getHenCatalog(initFirstHen).maxFoodIntake);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].layingLeftCycle, goldenEgg.getHenCatalog(initFirstHen).layingCycle);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].lastCheckBlockNumberPerSeat, block.number);
         assertEq(uint(AttackStatus.None), uint(goldenEgg.getWatchDogInfo(user1).status));
         assertEq(goldenEgg.initDurabilityOfProtectNumber(), goldenEgg.getAccountProtectNumbers(user1, initProtectNumber1));
         assertEq(0, goldenEgg.getAccountProtectNumbers(user1, initProtectNumber1-1));
@@ -91,7 +91,7 @@ contract GoldenEggTest is Test, GoldenEggScript {
         vm.expectRevert("ChickenCoop: No hen in this seat");
         goldenEgg.feedOwnHen(1, 100);
 
-        // help feed others hen
+        // Failed to help feed others hen
         vm.expectRevert("ChickenCoop: Hen is full.");
         goldenEgg.helpFeedHen(user2, 0, 100);
 
