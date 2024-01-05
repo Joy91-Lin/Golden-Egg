@@ -36,28 +36,19 @@ contract GoldenEggTest is Test, GoldenEggScript {
         deal(user1, 100 ether);
 
         // check enter game
-        vm.startPrank(user1);
+        vm.prank(user1);
         uint initProtectNumber1 = goldenEgg.startGame();
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].isOpened, true);
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].isExisted, true);
-        uint256 initFirstHen = goldenEgg.initFirstHen();
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].id, initFirstHen);
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].layingTimes, 0);
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].protectShellCount, 0);
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].foodIntake, goldenEgg.getHenCatalog(initFirstHen).maxFoodIntake);
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].layingLeftCycle, goldenEgg.getHenCatalog(initFirstHen).layingCycle);
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].lastCheckBlockNumberPerSeat, block.number);
-        assertEq(uint(AttackStatus.None), uint(goldenEgg.getWatchDogInfo(user1).status));
         assertEq(goldenEgg.initDurabilityOfProtectNumber(), goldenEgg.getAccountProtectNumbers(user1, initProtectNumber1));
         assertEq(0, goldenEgg.getAccountProtectNumbers(user1, initProtectNumber1-1));
-        vm.stopPrank();
 
         vm.prank(user2);
-        goldenEgg.startGame();
+        uint initProtectNumber2 = goldenEgg.startGame();
+        assertEq(goldenEgg.initDurabilityOfProtectNumber(), goldenEgg.getAccountProtectNumbers(user2, initProtectNumber2));
+        assertEq(0, goldenEgg.getAccountProtectNumbers(user2, initProtectNumber2-1));
     }
 
     
-    function test_OwnerAdmin()public{
+    function test_ownerAdmin()public{
         assertEq(deployContract, goldenEgg.owner());
         assertTrue(goldenEgg.isAdmin(address(goldenEgg)));
         assertTrue(goldenEgg.isAdmin(address(eggToken)));
@@ -71,7 +62,22 @@ contract GoldenEggTest is Test, GoldenEggScript {
         assertTrue(shellToken.isAdmin(address(goldenEgg)));
     }
 
-    function test_checkUserisJoinGame()public{
+    function test_entryGameInitValue()public{
+        vm.startPrank(user1);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].isOpened, true);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].isExisted, true);
+        uint256 initFirstHen = goldenEgg.initFirstHen();
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].id, initFirstHen);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].layingTimes, 0);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].protectShellCount, 0);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].foodIntake, goldenEgg.getHenCatalog(initFirstHen).maxFoodIntake);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].layingLeftCycle, goldenEgg.getHenCatalog(initFirstHen).layingCycle);
+        assertEq(goldenEgg.getCoopSeatInfo(false)[0].lastCheckBlockNumberPerSeat, block.number);
+        assertEq(uint(AttackStatus.None), uint(goldenEgg.getWatchDogInfo(user1).status));
+        vm.stopPrank();
+    }
+
+    function test_checkUserJoinGame()public{
         assertTrue(goldenEgg.isAccountJoinGame(user1));
         assertTrue(goldenEgg.isAccountJoinGame(user2));
         bytes4 selector = bytes4(keccak256("TargetDoesNotJoinGameYet(address)"));
