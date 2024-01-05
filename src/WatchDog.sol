@@ -249,7 +249,7 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
 
         if(rewardEggAmount < minEggTokenReward){
             uint256 targetDebt = minEggTokenReward - rewardEggAmount;
-            accountInfos[target].debtEggToken = targetDebt;
+            accountInfos[target].debtEggToken += targetDebt;
             rewardEggAmount = minEggTokenReward;
             IToken(eggTokenAddress).burn(target, rewardEggAmount);
             IToken(eggTokenAddress).mint(attacker, minEggTokenReward);
