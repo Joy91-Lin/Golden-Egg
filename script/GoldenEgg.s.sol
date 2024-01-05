@@ -7,10 +7,11 @@ import {BirthFactory} from "../src/BirthFactory.sol";
 import {ChickenCoop} from "../src/ChickenCoop.sol";
 import {WatchDog} from "../src/WatchDog.sol";
 import {GoldenEgg} from "../src/GoldenEgg.sol";
+import {console2} from "forge-std/Console2.sol";
 
 
 contract GoldenEggScript is Script {
-    address owner = 0x4ff1B1f7b28345eFC5e8f628A19e96c34696dbF0;
+    address deployContract = 0x4ff1B1f7b28345eFC5e8f628A19e96c34696dbF0;
     Token public eggToken;
     Token public litterToken;
     Token public shellToken;
@@ -29,10 +30,10 @@ contract GoldenEggScript is Script {
             address(litterToken),
             address(shellToken));
         uint layingCycle = 200;
-        uint consumeFoodForOneBlock = 5 * eggToken.decimals();
-        uint maxFoodIntake = 500 * eggToken.decimals();
-        uint unitEggToken = 2000 * eggToken.decimals();
-        uint unitLitterToken = 300 * litterToken.decimals();
+        uint consumeFoodForOneBlock = 5 * 10 ** eggToken.decimals();
+        uint maxFoodIntake = 500 * 10 ** eggToken.decimals();
+        uint unitEggToken = 2000 * 10 ** eggToken.decimals();
+        uint unitLitterToken = 300 * 10 ** litterToken.decimals();
         uint protectShellPeriod = 10;
         uint purchaseLimit = 3;
         uint ethPrice = 0.0001 ether;
