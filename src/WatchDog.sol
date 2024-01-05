@@ -56,10 +56,10 @@ contract WatchDog is BirthFactory, VRFV2WrapperConsumerBase, IAttckGameEvent{
     uint16 constant requestConfirmations = 10; // give victimn 10 blocks to protect their coop
     uint256 constant attackFeeMantissa = 1.03 * 10 ** 18;
     mapping(uint256 => Attack) attacks;
-    uint256 constant minEggTokenReward = 300;
-    uint256 constant maxEggTokenReward = 1000;
-    uint256 constant maxLitterReward = 1000;
-    uint256 constant targetShellReward = 100;
+    uint256 constant minEggTokenReward = 300 * 10 ** 18;
+    uint256 constant maxEggTokenReward = 1000 * 10 ** 18;
+    uint256 constant maxLitterReward = 1000 * 10 ** 18;
+    uint256 constant targetShellReward = 100 * 10 ** 18;
     uint256 constant closeFactorMantissa = 0.2 * 10 ** 18;
 
     constructor() VRFV2WrapperConsumerBase(linkAddress, vrfWrapperAddress) {}
