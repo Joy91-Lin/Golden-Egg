@@ -15,6 +15,7 @@ contract BirthFactory is GoldenTop {
         uint256 unitEggToken;
         uint256 unitLitterToken;
         uint256 protectShellPeriod;
+        uint256 unitShellToken;
         uint256 purchaselimit;
         uint256 ethPrice;
         uint256 eggPrice;
@@ -42,6 +43,7 @@ contract BirthFactory is GoldenTop {
         uint256 _unitEggToken,
         uint256 _unitLitterToken,
         uint256 _protectShellPeriod,
+        uint256 _unitShellToken,
         uint256 _purchaseLimit,
         uint256 _ethPrice,
         uint256 _eggPrice,
@@ -54,6 +56,7 @@ contract BirthFactory is GoldenTop {
             unitEggToken: _unitEggToken,
             unitLitterToken: _unitLitterToken,
             protectShellPeriod: _protectShellPeriod,
+            unitShellToken: _unitShellToken,
             purchaselimit: _purchaseLimit,
             ethPrice: _ethPrice,
             eggPrice: _eggPrice,
@@ -71,6 +74,7 @@ contract BirthFactory is GoldenTop {
         uint256 _unitEggToken,
         uint256 _unitLitterToken,
         uint256 _protectShellPeriod,
+        uint256 _unitShellToken,
         uint256 _purchaseLimit,
         uint256 _ethPrice,
         uint256 _eggPrice,
@@ -83,6 +87,7 @@ contract BirthFactory is GoldenTop {
             unitEggToken: _unitEggToken,
             unitLitterToken: _unitLitterToken,
             protectShellPeriod: _protectShellPeriod,
+            unitShellToken: _unitShellToken,
             purchaselimit: _purchaseLimit,
             ethPrice: _ethPrice,
             eggPrice: _eggPrice,

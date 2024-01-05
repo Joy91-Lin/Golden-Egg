@@ -35,11 +35,12 @@ contract GoldenEggScript is Script {
         uint unitEggToken = 2000 * 10 ** eggToken.decimals();
         uint unitLitterToken = 300 * 10 ** litterToken.decimals();
         uint protectShellPeriod = 10;
+        uint unitShellToken = 100 * 10 ** shellToken.decimals();
         uint purchaseLimit = 3;
         uint ethPrice = 0.0001 ether;
         uint eggPrice = ethPrice * eggToken.getRatioOfEth();
         bool isOnSale = true;
-        goldenEgg.createHen(layingCycle, consumeFoodForOneBlock, maxFoodIntake, unitEggToken, unitLitterToken, protectShellPeriod, purchaseLimit, ethPrice, eggPrice, isOnSale);
+        goldenEgg.createHen(layingCycle, consumeFoodForOneBlock, maxFoodIntake, unitEggToken, unitLitterToken, protectShellPeriod, unitShellToken, purchaseLimit, ethPrice, eggPrice, isOnSale);
         uint rewardPercentageMantissa = 10;
         uint dumpPercentageMantissa = 10;
         goldenEgg.createDog(rewardPercentageMantissa, dumpPercentageMantissa, ethPrice, eggPrice, isOnSale);

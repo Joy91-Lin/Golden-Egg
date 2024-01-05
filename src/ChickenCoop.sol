@@ -241,7 +241,7 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
                 uint litterTokenAmount = giveLitterToken(target, hen.unitLitterToken, nowLayingTimes);
 
                 // give protect shell
-                uint shellTokenAmount = giveProtectShell(target, seatIndex, hen.protectShellPeriod, nowLayingTimes);
+                uint shellTokenAmount = giveProtectShell(target, seatIndex, hen.protectShellPeriod, hen.unitShellToken, nowLayingTimes);
 
                 emit LayEGGs(seatIndex, eggTokenAmount, litterTokenAmount, shellTokenAmount);
             }
@@ -269,7 +269,7 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         return nowLitterAmount;
     }
 
-    function giveProtectShell(address target, uint seatIndex, uint shellPeriod, uint nowLayingTimes) internal  returns (uint nowShellAmount){
+    function giveProtectShell(address target, uint seatIndex, uint shellPeriod, uint unitShellToken, uint nowLayingTimes) internal  returns (uint nowShellAmount){
         CoopSeat memory coopSeat = coopSeats[target][seatIndex];
         uint preShellAmount = coopSeat.protectShellCount;
         uint totalLayingTimes = coopSeat.layingTimes + nowLayingTimes;
@@ -277,7 +277,7 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         nowShellAmount = totalProtectShell - preShellAmount;
 
         if(nowShellAmount > 0){
-            IToken(shellTokenAddress).mint(target, nowShellAmount * 10 ** IToken(shellTokenAddress).decimals());
+            IToken(shellTokenAddress).mint(target, nowShellAmount * unitShellToken);
         }
 
         coopSeats[target][seatIndex].layingTimes = totalLayingTimes;
