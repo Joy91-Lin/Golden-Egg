@@ -2,7 +2,6 @@ pragma solidity ^0.8.21;
 
 import "./BirthFactory.sol";
 import "./Token.sol";
-import "./GoldenCore.sol";
 
 interface IChickenCoop{
     function putUpHen(uint seatIndex, uint henId, bool forceExchange, uint feedAmount) external payable;

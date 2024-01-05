@@ -1,8 +1,8 @@
 pragma solidity ^0.8.21;
 
-import {GoldenCore} from "./GoldenCore.sol";
+import {GoldenTop} from "./GoldenTop.sol";
 
-contract BirthFactory is GoldenCore {
+contract BirthFactory is GoldenTop {
     event BirthHen(uint256 henId, bool isOnSale);
     event BirthDog(uint256 dogId, bool isOnSale);
     event HenSaleStatus(uint256 henId, bool isOnSale);

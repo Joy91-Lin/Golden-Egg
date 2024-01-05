@@ -2,7 +2,7 @@ pragma solidity ^0.8.21;
 
 import {Script} from "forge-std/Script.sol";
 import {Token} from "../src/Token.sol";
-import {GoldenCore} from "../src/GoldenCore.sol";
+import {GoldenTop} from "../src/GoldenTop.sol";
 import {BirthFactory} from "../src/BirthFactory.sol";
 import {ChickenCoop} from "../src/ChickenCoop.sol";
 import {WatchDog} from "../src/WatchDog.sol";

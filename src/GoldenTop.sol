@@ -2,7 +2,7 @@ pragma solidity ^0.8.21;
 
 import "./AdminControl.sol";
 
-interface IGoldenCore{
+interface IGoldenTop{
     function checkActivated(address account) external view returns (bool);
     function getAccountLastModifyBlockNumber(address account) external view returns(uint);
     function getCurrentBlockNumber() external view returns (uint256);
@@ -10,15 +10,15 @@ interface IGoldenCore{
     function getTotalTrashCanAmount(address account) external view returns (uint256);
 }
 
-interface IGoldenCoreEvent{
-    event AccountLastestAction(address indexed account, uint indexed blockNumber, GoldenCore.AccountAction indexed action);
+interface IGoldenTopEvent{
+    event AccountLastestAction(address indexed account, uint indexed blockNumber, GoldenTop.AccountAction indexed action);
 }
 
-interface IGoldenCoreError{
+interface IGoldenTopError{
     error TargetDoesNotJoinGameYet(address target);
 }
  
-contract GoldenCore is IGoldenCore, IGoldenCoreEvent, IGoldenCoreError,AdminControl {
+contract GoldenTop is IGoldenTop, IGoldenTopEvent, IGoldenTopError, AdminControl {
     enum AccountAction{
         StartGame,
         HelpOthers,
