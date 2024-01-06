@@ -14,15 +14,10 @@
   - ProtectShellToken：養雞獎勵，在特定的下蛋次數後會得到的高級獎勵，可作為防護罩消耗保護農場。
 - GoldenTop：負責記錄用戶資料、農場防禦數字，繼承AdminControl。
 - BirthFactory：負責生產Hen、WatchDog並紀錄Hen、WatchDog型錄，繼承GoldenTop。
-- ChickenCoop：每個雞舍最多20個位置，可以在已購買的位子上自由替換、飼養擁有的雞，或是去餵養其他農場正在下蛋的雞，並幫助雞產生獎勵。
-- WatchDog：負責看守農場、進攻其他農場，並可以自由的替換擁有的狗。
-  - 看守
-    - 可以利用ProtectShellToken去開啟農場防護罩防禦攻擊。
-    - 若被進攻成功，會被偷走EggToken和被倒LitterToken，與此同時會依據watchDog的獎勵數值，給予ProtectShellToken補償。
-  - 進攻
-    - 進攻其他農場的防禦數字，若隨機進攻的數字被目標農場成功防禦(進攻失敗)，則會讓目標農場防禦數字掉一點護甲值
-    - 若進攻成功，則會依據watchDog的數值獲得目標農場的EggToken並將自己的LitterToken垃圾倒到目標農場的垃圾桶
-- GoldenEgg：玩家進入遊戲點和購物商場。
+- ChickenCoop：每個雞舍最多20個位置，可以在已購買的位子上自由替換、飼養擁有的雞，或是去餵養其他農場正在下蛋的雞，並幫助雞產生獎勵，繼承 BirthFactory。
+- WatchDog：負責看守農場，可以自由的替換擁有的狗、開啟防護罩，繼承 BirthFactory。
+- AttackGame：進攻其他農場，成功攻擊者會從目標農場獲得部分獎勵(EggToken)並將農場中的部分垃圾(LitterToken)轉移到目標農場，目標農場會在被攻擊後開啟防護罩並另外得到ProtectShellToken作為補償，以上數值依據目標農場的看守狗計算。
+- GoldenEgg：玩家進入遊戲點和購物商場，繼承 ChickenCoop, WatchDog。
 
 #### Development
 - Contract
@@ -39,8 +34,9 @@
     forge script script/GoldenEgg.s.sol:GoldenEggScript --broadcast --verify --rpc-url https://eth-sepolia.g.alchemy.com/v2/{api_key} 
     ```
 
-- Contract Address (Sepolia):
+- Contract Address:
 	- GoldenEgg:
+	- AttackGame:
 	- EggToken:
 	- LitterToken:
 	- ProtectShellToken:
@@ -53,3 +49,34 @@
   - test_checkUserJoinGame() - 檢查isAccountJoinGame()
   - test_feedHen() - 檢查餵食雞消耗的eggToken
 #### Usage
+
++ 遊戲主軸
+  - 飼養
+    - 自由替換當前飼養的雞
+    - 被動產出獎勵 (需被觸發)，會產出獎勵(eggToken/ProtectShellToken)及垃圾(LitterToken)
+    - 餵食自己或他人正在飼養的雞
+    - 垃圾桶滿時，雞就不會產生獎勵和垃圾，但仍會消耗已餵食的飼料
+    - 雞飢餓時，即使有被放在雞舍的位子上，也不會產生獎勵
+  - 購物
+    - 購買雞 - 依據型錄id購買，有個別個購買上限
+    - 購買看守狗 - 依據型錄id購買，不可重複購買
+    - 購買防禦數字 - 指定購買數字，範圍為全部攻擊範圍，一次提供10點護甲值，不可重複購買，防禦數字最多數量為攻擊範圍的一半，在被攻擊狀態時不可執行。
+    - 移除防禦數字 - 指定移除數字，在被攻擊狀態時不可執行。
+    - 購買垃圾桶容量 - 指定購買容量個數(以10 ** 18單位加成)，單次購買單位不可超過上限
+    - 購買農場飼養位子 - 
+    - 
+  - 看守
+  - 攻擊
+    - 有可能目標農場垃圾桶已滿，就不會再轉移攻擊者的垃圾到目標農場了
+
++ 初始玩家配置
+  - 給予單位 3,000 個 EggToken (3000 * 10 ** 18)
+  - 給予單位 300 個 ShellToken (300 * 10 ** 18) 
+  - 購買一隻 id = 0 的雞
+  - 購買一隻 id = 0 的狗
+  - 一個帶有 10 點護甲值的隨機防護數字
+  - 一個農場位子
+  - 將購買的雞放上農場位子，滿腹飼料，開始飼養
+  - 初始垃圾容量為1000個垃圾單位
+  - 開啟新手防護罩 (250 個區塊時間)
+
