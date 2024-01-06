@@ -17,7 +17,7 @@ interface IToken{
 
 interface ITokenError{
     /**
-     * @dev Indicates a failure with the token `sender`. Used in transfers.
+     * @dev Indicates a failure with the token `call`.
      * @param caller Address who is trying to interact with the token.
      */
     // error SenderMustBeAdmin(address caller);
@@ -57,12 +57,13 @@ contract Token is  ITokenError, ITokenEvent, IToken, AdminControl{
     string private _symbol;
     uint256 private ratioOfEth;
     
-    constructor(string memory name_, string memory symbol_, uint256 _ratioOfEth, address _goldenEggAddress) {
+    constructor(string memory name_, string memory symbol_, uint256 _ratioOfEth, address _goldenEggAddress, address _attackGameAddress) {
         _name = name_;
         _symbol = symbol_;
         ratioOfEth = _ratioOfEth;
         allowers[msg.sender] = true;
         allowers[_goldenEggAddress] = true;
+        allowers[_attackGameAddress] = true;
     }
 
     function name() public view returns (string memory) {
@@ -85,7 +86,8 @@ contract Token is  ITokenError, ITokenEvent, IToken, AdminControl{
         return _balances[account];
     }
 
-    function setRatioOfEth(uint256 _ratioOfEth) public onlyAdmin{
+    function setRatioOfEth(uint256 _ratioOfEth) public {
+        onlyAdmin();
         ratioOfEth = _ratioOfEth;
     }
 
@@ -93,7 +95,8 @@ contract Token is  ITokenError, ITokenEvent, IToken, AdminControl{
         return ratioOfEth;
     }
 
-    function transfer(address from, address to, uint256 value) public onlyAdmin {
+    function transfer(address from, address to, uint256 value) public {
+        onlyAdmin();
         if (from == address(0)) {
             revert InvalidSender(address(0));
         }
@@ -102,13 +105,15 @@ contract Token is  ITokenError, ITokenEvent, IToken, AdminControl{
         }
         _update(from, to, value);
     }
-    function mint(address account, uint256 value) public onlyAdmin {
+    function mint(address account, uint256 value) public {
+        onlyAdmin();
         if (account == address(0)) {
             revert InvalidReceiver(address(0));
         }
         _update(address(0), account, value);
     }
-    function burn(address account, uint256 value) public onlyAdmin {
+    function burn(address account, uint256 value) public {
+        onlyAdmin();
         if (account == address(0)) {
             revert InvalidSender(address(0));
         }
