@@ -38,28 +38,32 @@ contract GoldenEggTest is Test, GoldenEggScript {
         // check enter game
         vm.prank(user1);
         uint initProtectNumber1 = goldenEgg.startGame();
-        assertEq(goldenEgg.initDurabilityOfProtectNumber(), goldenEgg.getAccountProtectNumbers(user1, initProtectNumber1));
+        assertEq(goldenEgg.maxDurabilityOfProtectNumber(), goldenEgg.getAccountProtectNumbers(user1, initProtectNumber1));
         assertEq(0, goldenEgg.getAccountProtectNumbers(user1, initProtectNumber1-1));
 
         vm.prank(user2);
         uint initProtectNumber2 = goldenEgg.startGame();
-        assertEq(goldenEgg.initDurabilityOfProtectNumber(), goldenEgg.getAccountProtectNumbers(user2, initProtectNumber2));
+        assertEq(goldenEgg.maxDurabilityOfProtectNumber(), goldenEgg.getAccountProtectNumbers(user2, initProtectNumber2));
         assertEq(0, goldenEgg.getAccountProtectNumbers(user2, initProtectNumber2-1));
     }
 
-    
     function test_ownerAdmin()public{
         assertEq(deployContract, goldenEgg.owner());
+        assertTrue(goldenEgg.isAdmin(deployContract));
         assertTrue(goldenEgg.isAdmin(address(goldenEgg)));
-        assertTrue(goldenEgg.isAdmin(address(eggToken)));
-        assertTrue(goldenEgg.isAdmin(address(litterToken)));
-        assertTrue(goldenEgg.isAdmin(address(shellToken)));
+        assertTrue(goldenEgg.isAdmin(address(attackGame)));
+
         assertEq(deployContract, eggToken.owner());
         assertTrue(eggToken.isAdmin(address(goldenEgg)));
+        assertTrue(eggToken.isAdmin(address(attackGame)));
+
         assertEq(deployContract, litterToken.owner());
         assertTrue(litterToken.isAdmin(address(goldenEgg)));
+        assertTrue(litterToken.isAdmin(address(attackGame)));
+
         assertEq(deployContract, shellToken.owner());
         assertTrue(shellToken.isAdmin(address(goldenEgg)));
+        assertTrue(shellToken.isAdmin(address(attackGame)));
     }
 
     function test_entryGameInitValue()public{

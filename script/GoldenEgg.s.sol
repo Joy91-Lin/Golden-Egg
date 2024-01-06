@@ -8,27 +8,37 @@ import {ChickenCoop} from "../src/ChickenCoop.sol";
 import {WatchDog} from "../src/WatchDog.sol";
 import {GoldenEgg} from "../src/GoldenEgg.sol";
 import {console2} from "forge-std/Console2.sol";
+import {AttackGame} from "../src/AttackGame.sol";
 
 
 contract GoldenEggScript is Script {
-    address deployContract = 0x4ff1B1f7b28345eFC5e8f628A19e96c34696dbF0;
+    address deployContract = vm.envAddress("OWNER");
     Token public eggToken;
     Token public litterToken;
     Token public shellToken;
     GoldenEgg public goldenEgg;
+    AttackGame public attackGame;
 
     function run() public{
         uint256 userPrivateKey = vm.envUint("PRIVATE_KEY"); 
         vm.startBroadcast(userPrivateKey);
 
+
         goldenEgg = new GoldenEgg();
-        eggToken = new Token("Egg Token", "EGG", 10_000, address(goldenEgg));
-        litterToken = new Token("Litter Token", "LITTER", 5_000, address(goldenEgg));
-        shellToken = new Token("Protect Shell Token", "SHELL",1_000, address(goldenEgg));
+        attackGame = new AttackGame();
+        eggToken = new Token("Egg Token", "EGG", 10_000, address(goldenEgg), address(attackGame));
+        litterToken = new Token("Litter Token", "LITTER", 5_000, address(goldenEgg), address(attackGame));
+        shellToken = new Token("Protect Shell Token", "SHELL",1_000, address(goldenEgg), address(attackGame));
         goldenEgg.setUpAddress(
             address(eggToken),
             address(litterToken),
-            address(shellToken));
+            address(shellToken),
+            address(attackGame));
+        attackGame.setUpAddress(
+            address(eggToken),
+            address(litterToken),
+            address(shellToken),
+            address(goldenEgg));
         uint layingCycle = 200;
         uint consumeFoodForOneBlock = 5 * 10 ** eggToken.decimals();
         uint maxFoodIntake = 500 * 10 ** eggToken.decimals();
@@ -41,9 +51,11 @@ contract GoldenEggScript is Script {
         uint eggPrice = ethPrice * eggToken.getRatioOfEth();
         bool isOnSale = true;
         goldenEgg.createHen(layingCycle, consumeFoodForOneBlock, maxFoodIntake, unitEggToken, unitLitterToken, protectShellPeriod, unitShellToken, purchaseLimit, ethPrice, eggPrice, isOnSale);
-        uint rewardPercentageMantissa = 10;
-        uint dumpPercentageMantissa = 10;
-        goldenEgg.createDog(rewardPercentageMantissa, dumpPercentageMantissa, ethPrice, eggPrice, isOnSale);
+        uint compensationPercentageMantissa = 10;
+        uint lostPercentageMantissa = 10;
+        goldenEgg.createDog(compensationPercentageMantissa, lostPercentageMantissa, ethPrice, eggPrice, isOnSale);
+        address demo_cannot_attack = vm.envAddress("DEMO_CAN_NOT_ATTACK");
+        goldenEgg.setDemoCannotAttackAccount(demo_cannot_attack);
         vm.stopBroadcast();
     }
 }
