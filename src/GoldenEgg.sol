@@ -27,7 +27,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
     uint256 public constant initProtectNumbers = 1;
     uint256 public constant initProtectShellBlockAmount = 250;
     uint256 public constant initDebtEggToken = 0;
-    uint256 public constant initEggTokenAmount = 30_000 ether;
+    uint256 public constant initEggTokenAmount = 3_000 ether;
     uint256 public constant initShellTokenAmount = 300 ether;
 
     constructor() {
