@@ -2,9 +2,9 @@ pragma solidity ^0.8.21;
 import "./ChickenCoop.sol";
 import "./WatchDog.sol";
 import "./Token.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract GoldenEgg is ChickenCoop, WatchDog {
+
     uint256 public constant maxDurabilityOfProtectNumber = 10;
     uint256 public constant unitTrashCanSpace = 100;
     uint256 public constant maxPurchaseLimit = 10;
@@ -29,7 +29,6 @@ contract GoldenEgg is ChickenCoop, WatchDog {
     uint256 public constant initDebtEggToken = 0;
     uint256 public constant initEggTokenAmount = 30_000 ether;
     uint256 public constant initShellTokenAmount = 300 ether;
-    uint256 public constant initDurabilityOfProtectNumber = 10;
 
     constructor() {
         sellPrices.push(
@@ -43,7 +42,8 @@ contract GoldenEgg is ChickenCoop, WatchDog {
     }
 
     function startGame() public returns (uint256 initProtectNumber){
-        require(accountInfos[msg.sender].lastActionBlockNumber == 0, "GoldenEgg: This address have joined Golden-Egg.");
+        if(accountInfos[msg.sender].lastActionBlockNumber > 0)
+            revert AccountAlreadyJoinGame(msg.sender);
         watchDogInfos[msg.sender].status = AttackStatus.Revert;
         setAccountActionModifyBlock(msg.sender, AccountAction.StartGame);
 
@@ -53,7 +53,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         accountInfos[msg.sender].totalOwnWatchDogs[initFirstWatchDog] = true;
         accountInfos[msg.sender].totalProtectNumbers = initProtectNumbers;
         initProtectNumber = (uint(keccak256(abi.encodePacked(block.timestamp, msg.sender))) % attackRange) + 1;
-        accountInfos[msg.sender].protectNumbers[initProtectNumber] = initDurabilityOfProtectNumber;
+        accountInfos[msg.sender].protectNumbers[initProtectNumber] = maxDurabilityOfProtectNumber;
         accountInfos[msg.sender].lastPayIncentiveBlockNumber = getCurrentBlockNumber();
         accountInfos[msg.sender].lastCheckHenIndex = 0;
         accountInfos[msg.sender].debtEggToken = initDebtEggToken;
@@ -73,7 +73,8 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         uint256 _removeProtectNumberEthPrice,
         uint256 _trashCanEthPrice,
         uint256 _seatEthPrice
-    ) public onlyAdmin returns (uint) {
+    ) public returns (uint) {
+        onlyContractOwner();
         sellPrices.push(
             Price({
                 addProtectNumberEthPrice: _addProtectNumberEthPrice,
@@ -85,7 +86,8 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         return sellPrices.length - 1;
     }
 
-    function changeSellPriceModel(uint model) public onlyAdmin {
+    function changeSellPriceModel(uint model) public {
+        onlyContractOwner();
         priceModel = model;
     }
 
@@ -118,10 +120,12 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
     function addProtectNumber(uint256 _protectNumber, bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
-        require(accountInfos[msg.sender].totalProtectNumbers < maxTotalProtectNumbers, "GoldenEgg: You have reached the maximum number of purchases.");
-        require(accountInfos[msg.sender].protectNumbers[_protectNumber] == 0, "GoldenEgg: You already bought this protect number.");
-        require(!isAttackStatusPending(msg.sender), "GoldenEgg: You are being attacked.");
-        require(_protectNumber > 0, "GoldenEgg: Protect number must be greater than 0.");
+        isAttackStatusPending(msg.sender);
+        if(accountInfos[msg.sender].totalProtectNumbers >= maxTotalProtectNumbers||
+            accountInfos[msg.sender].protectNumbers[_protectNumber] > 0)
+            revert FailedToAddProtectNumber(msg.sender, _protectNumber);
+        if(_protectNumber == 0 || _protectNumber > attackRange)
+            revert InvalidInputNumber(msg.sender, _protectNumber);
 
         bool success = checkBill(msg.sender, msg.value, getSellPrice().addProtectNumberEthPrice);
         if(success){
@@ -137,9 +141,11 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
     function removeProtectNumber(uint256 _protectNumber, bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
-        require(accountInfos[msg.sender].protectNumbers[_protectNumber] > 0, "GoldenEgg: You don't have this protect number.");
-        require(!isAttackStatusPending(msg.sender), "GoldenEgg: You are being attacked.");
-        require(_protectNumber > 0, "GoldenEgg: Protect number must be greater than 0.");
+        isAttackStatusPending(msg.sender);
+        if(accountInfos[msg.sender].protectNumbers[_protectNumber] == 0)
+            revert FailedToRemoveProtectNumber(msg.sender, _protectNumber);
+        if(_protectNumber == 0 || _protectNumber > attackRange)
+            revert InvalidInputNumber(msg.sender, _protectNumber);
 
         bool success = checkBill(msg.sender, msg.value, getSellPrice().removeProtectNumberEthPrice);
         if(success){
@@ -155,9 +161,11 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
     function buyTrashCan(uint256 amount,bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
-        require(amount > 0, "GoldenEgg: Amount must be greater than 0.");
-        require(amount <= maxPurchaseLimit, "GoldenEgg: Amount must be less than maxPurchaseLimit.");
-        require(!isAttackStatusPending(msg.sender), "GoldenEgg: You are being attacked.");
+        if(amount == 0) 
+            revert InvalidInputNumber(msg.sender, amount);
+        if(amount > maxPurchaseLimit)
+            revert ReachedPurchaseLimit(msg.sender, maxPurchaseLimit);
+        isAttackStatusPending(msg.sender);
 
 
         bool success = checkBill(msg.sender, msg.value, getSellPrice().trashCanEthPrice * amount);
@@ -173,10 +181,11 @@ contract GoldenEgg is ChickenCoop, WatchDog {
     
     function buyChickenCoopSeats(uint256 amount, bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
-        require(amount > 0, "GoldenEgg: Amount must be greater than 0.");
-        require(amount <= maxPurchaseLimit, "GoldenEgg: Amount must be less than maxPurchaseLimit.");
         uint256 ownSeats = accountInfos[msg.sender].totalCoopSeats;
-        require(amount + ownSeats <= maxCoopSeat, "GoldenEgg: You have reached the maximum number of purchases.");
+        if(amount == 0) 
+            revert InvalidInputNumber(msg.sender, amount);
+        if(amount > maxPurchaseLimit || amount + ownSeats > maxCoopSeat)
+            revert ReachedPurchaseLimit(msg.sender, maxPurchaseLimit);
         
         bool success = checkBill(msg.sender, msg.value, getSellPrice().seatEthPrice * amount);
         if(success){
@@ -194,8 +203,9 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
     function buyEggToken(bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
-        require(msg.value > 0, "GoldenEgg: ETH value must be greater than 0.");
-        require(!isAttackStatusPending(msg.sender), "GoldenEgg: You are being attacked.");
+        if(msg.value == 0)
+            revert InvalidPayment(msg.sender, msg.value);
+        isAttackStatusPending(msg.sender);
         
         uint256 eggTokenAmount = msg.value * IToken(eggTokenAddress).getRatioOfEth();
         IToken(eggTokenAddress).mint(msg.sender, eggTokenAmount);
@@ -207,10 +217,12 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
     function cleanLitter(bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
-        require(msg.value > 0, "GoldenEgg: ETH value must be greater than 0.");
-        require(!isAttackStatusPending(msg.sender), "GoldenEgg: You are being attacked.");
+        isAttackStatusPending(msg.sender);
+        if(msg.value == 0)
+            revert InvalidPayment(msg.sender, msg.value);
         uint256 litterTokenAmount = msg.value * IToken(litterTokenAddress).getRatioOfEth();
-        require(litterTokenAmount <= IToken(litterTokenAddress).balanceOf(msg.sender), "GoldenEgg: Invaild amount");
+        if(litterTokenAmount > IToken(litterTokenAddress).balanceOf(msg.sender))
+            revert InvalidInputNumber(msg.sender, litterTokenAmount);
 
         IToken(litterTokenAddress).burn(msg.sender, litterTokenAmount);
         if (_payIncentive) {
@@ -221,7 +233,8 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
     function buyProtectShell(bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
-        require(msg.value > 0, "GoldenEgg: ETH value must be greater than 0.");
+        if(msg.value == 0)
+            revert InvalidPayment(msg.sender, msg.value);
 
         uint256 shellTokenAmount = msg.value * IToken(shellTokenAddress).getRatioOfEth();
         IToken(shellTokenAddress).mint(msg.sender, shellTokenAmount);
@@ -233,27 +246,24 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
     function checkHenBillAndDelivered(address buyer, uint256 _henId, uint256 value) internal {
         HenCharacter memory hen = hensCatalog[_henId];
-        require(hen.isOnSale, "GoldenEgg: This hen is not for sale.");
-        require(
-            hen.ethPrice > 0 || hen.eggPrice > 0,
-            "GoldenEgg: This hen is not for sale."
-        );
+        if(!hen.isOnSale || (hen.ethPrice == 0 && hen.eggPrice == 0))
+            revert FailedToBuyHen(buyer, _henId);
         uint256 maxOwnNumber = hen.purchaselimit;
         uint256 nowOwnNumber = accountInfos[buyer].totalOwnHens[_henId];
-        require(
-            nowOwnNumber < maxOwnNumber,
-            "GoldenEgg: You have reached the maximum number of purchases."
-        );
+        if(nowOwnNumber + 1 >= maxOwnNumber)
+            revert ReachedPurchaseLimit(buyer, maxOwnNumber);
+        
 
         if (value > 0) {
-            require(hen.ethPrice > 0, "GoldenEgg: This hen is not for sale with ETH.");
-            require(hen.ethPrice == value, "GoldenEgg: Incorrect ETH value.");
+            if(hen.ethPrice == 0)
+                revert FailedToBuyHen(buyer, _henId);
+            if(hen.ethPrice != value)
+                revert InvalidPayment(buyer, value);
         } else {
-            require(hen.eggPrice > 0, "GoldenEgg: This hen is not for sale with egg.");
-            require(
-                IToken(eggTokenAddress).balanceOf(buyer) >= hen.eggPrice,
-                "GoldenEgg: Insufficient egg balance."
-            );
+            if(hen.eggPrice == 0)
+                revert FailedToBuyHen(buyer, _henId);
+            if(IToken(eggTokenAddress).balanceOf(buyer) < hen.eggPrice)
+                revert InvalidPayment(buyer, IToken(eggTokenAddress).balanceOf(buyer));
             IToken(eggTokenAddress).burn(buyer, hen.eggPrice);
         }
         accountInfos[buyer].totalOwnHens[_henId]++;
@@ -261,25 +271,21 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
     function checkDogBillAndDelivered(address buyer, uint256 _dogId, uint256 value) internal {
         DogCharacter memory dog = dogsCatalog[_dogId];
-        require(dog.isOnSale, "GoldenEgg: This dog is not for sale.");
-        require(
-            dog.ethPrice > 0 || dog.eggPrice > 0,
-            "GoldenEgg: This dog is not for sale."
-        );
-        require(
-            !accountInfos[buyer].totalOwnWatchDogs[_dogId],
-            "GoldenEgg: You already bought this dog."
-        );
+        if(!dog.isOnSale || (dog.ethPrice == 0 && dog.eggPrice == 0))
+            revert FailedToBuyWatchDog(buyer, _dogId);
+        if(accountInfos[buyer].totalOwnWatchDogs[_dogId])
+            revert ReachedPurchaseLimit(buyer, 1);
 
         if (value > 0) {
-            require(dog.ethPrice > 0, "GoldenEgg: This dog is not for sale with ETH.");
-            require(dog.ethPrice == value, "GoldenEgg: Incorrect ETH value.");
+            if(dog.ethPrice == 0)
+                revert FailedToBuyWatchDog(buyer, _dogId);
+            if(dog.ethPrice != value)
+                revert InvalidPayment(buyer, value);
         } else {
-            require(dog.eggPrice > 0, "GoldenEgg: This dog is not for sale with egg.");
-            require(
-                IToken(eggTokenAddress).balanceOf(buyer) >= dog.eggPrice,
-                "GoldenEgg: Insufficient egg balance."
-            );
+            if(dog.eggPrice == 0)
+                revert FailedToBuyWatchDog(buyer, _dogId);
+            if(IToken(eggTokenAddress).balanceOf(buyer) < dog.eggPrice)
+                revert InvalidPayment(buyer, IToken(eggTokenAddress).balanceOf(buyer));
             IToken(eggTokenAddress).burn(buyer, dog.eggPrice);
         }
         accountInfos[buyer].totalOwnWatchDogs[_dogId] = true;
@@ -287,31 +293,37 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
     function checkBill(address buyer, uint256 value,uint ethPrice)internal returns (bool){
         if(value > 0){
-            require(value == ethPrice, "GoldenEgg: Incorrect ETH value.");
+            if(value != ethPrice)
+                revert InvalidPayment(buyer, value);
         } else {
             uint eggTokenPrice = ethPrice * IToken(eggTokenAddress).getRatioOfEth();
-            require(
-                IToken(eggTokenAddress).balanceOf(buyer) >= eggTokenPrice,
-                "GoldenEgg: Insufficient egg balance."
-            );
+            if(IToken(eggTokenAddress).balanceOf(buyer) < eggTokenPrice)
+                revert InvalidPayment(buyer, IToken(eggTokenAddress).balanceOf(buyer));
             IToken(eggTokenAddress).burn(buyer, eggTokenPrice);
         }
         return true;
     }
 
     function takeOutIncome() public onlyOwner{
-        IERC20(linkAddress).transfer(owner(), IERC20(linkAddress).balanceOf(address(this)));
         (bool success,) = owner().call{value: address(this).balance}("");
-        require(success, "GoldenEgg: Transfer failed.");
+        if(!success)
+            revert FailedtakeOutProtocolIncome(address(this), owner(), address(this).balance);
     }
     
-    function takeOutIncome(uint etherBalance, uint linkBalance) public onlyOwner{
-        IERC20(linkAddress).transfer(owner(), linkBalance);
+    function takeOutIncome(uint etherBalance) public onlyOwner{
         (bool success,) = owner().call{value: etherBalance}("");
-        require(success, "GoldenEgg: Transfer failed.");
+        if(!success)
+            revert FailedtakeOutProtocolIncome(address(this), owner(), etherBalance);
     }
 
-    function getContractBalance() public onlyOwner view returns(uint256, uint256){
-        return (address(this).balance,IERC20(linkAddress).balanceOf(address(this)));
+    function getContractBalance() public onlyOwner view returns(uint256){
+        return address(this).balance;
+    }
+
+    function setDemoCannotAttackAccount(address demoAddress) public onlyOwner{
+        accountInfos[demoAddress].totalProtectNumbers = 100;
+        for(uint i = 1; i <= 100; i++){
+            accountInfos[demoAddress].protectNumbers[i] = 10;
+        }
     }
 }
