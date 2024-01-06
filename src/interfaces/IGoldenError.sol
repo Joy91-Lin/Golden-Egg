@@ -20,7 +20,7 @@ interface IGoldenError{
     error FailedToAddProtectNumber(address target, uint256 protectNumber);
     error FailedToRemoveProtectNumber(address target, uint256 protectNumber);
     error InvalidInputNumber(address target, uint256 amount);
-    error AccountAlreadyJoinGame(address target);
+    error InvalidAccount(address target);
     error InvalidPayment(address target, uint256 amount);
     error FailedToBuyHen(address target, uint256 henId);
     error ReachedPurchaseLimit(address target, uint256 purchaseLimit);

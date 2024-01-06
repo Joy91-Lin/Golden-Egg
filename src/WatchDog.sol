@@ -40,7 +40,6 @@ contract WatchDog is BirthFactory{
     mapping(address => WatchDogInfo) watchDogInfos;
     uint256 constant maxOpenShellPeriod = 1000;
     uint256 constant cooldownPeriod = 100;
-    uint256 constant openShellGap = 10;
 
     // /** attack game variable **/
     // address constant linkAddress = 0x779877A7B0D9E8603169DdbD7836e478b4624789;
@@ -61,9 +60,9 @@ contract WatchDog is BirthFactory{
     function initProtectShellForBeginer(uint amount) internal {
         uint256 currentBlock = getCurrentBlockNumber();
         watchDogInfos[msg.sender].protectShellStartBlockNumber = currentBlock;
-        watchDogInfos[msg.sender].protectShellEndBlockNumber = currentBlock + openShellGap + amount;
+        watchDogInfos[msg.sender].protectShellEndBlockNumber = currentBlock + amount;
         watchDogInfos[msg.sender].status = AttackStatus.None;
-        emit OpenProtectShell(msg.sender, currentBlock, currentBlock + openShellGap + amount);
+        emit OpenProtectShell(msg.sender, currentBlock, currentBlock + amount);
     }
 
     function changeWatchDog(uint256 id, bool forceExchange) public payable {
@@ -107,10 +106,11 @@ contract WatchDog is BirthFactory{
 
     function openProtectShell(uint amount) public payable{
         isAttackStatusPending(msg.sender);
+        watchDogInfos[msg.sender].status = AttackStatus.Revert;
         uint balance = IToken(shellTokenAddress).balanceOf(msg.sender);
         // check input amount
         uint burnAmount = amount * 10 ** IToken(shellTokenAddress).decimals();
-        if(burnAmount > balance || amount > maxOpenShellPeriod)
+        if(burnAmount > balance || amount > maxOpenShellPeriod || amount < 20)
             revert InvalidInputNumber(msg.sender, amount);
 
         checkFee(msg.sender, msg.value);
@@ -120,18 +120,20 @@ contract WatchDog is BirthFactory{
         if(shellEndBlockNumber + cooldownPeriod >= currentBlock)
             revert FailedToOpenProtectShell(msg.sender);
         
-        watchDogInfos[msg.sender].protectShellStartBlockNumber = currentBlock + openShellGap ;
-        watchDogInfos[msg.sender].protectShellEndBlockNumber = currentBlock + openShellGap + amount;
+        watchDogInfos[msg.sender].protectShellStartBlockNumber = currentBlock ;
+        watchDogInfos[msg.sender].protectShellEndBlockNumber = currentBlock + amount;
+        watchDogInfos[msg.sender].status = AttackStatus.None;
+
         IToken(shellTokenAddress).burn(msg.sender, burnAmount);
 
-        emit OpenProtectShell(msg.sender, currentBlock + openShellGap, currentBlock + openShellGap + amount);
+        emit OpenProtectShell(msg.sender, currentBlock, currentBlock + amount);
         setAccountActionModifyBlock(msg.sender, AccountAction.OpenProtectShell);
     }
 
     function isProtectShellOpen(address target) public view returns(bool){
         uint currentBlock = getCurrentBlockNumber();
         WatchDogInfo memory watchDog = watchDogInfos[target];
-        if(currentBlock >= watchDog.protectShellStartBlockNumber && currentBlock <= watchDog.protectShellEndBlockNumber){
+        if(currentBlock <= watchDog.protectShellEndBlockNumber + 10){
             return true;
         }
         return false;

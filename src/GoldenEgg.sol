@@ -42,8 +42,8 @@ contract GoldenEgg is ChickenCoop, WatchDog {
     }
 
     function startGame() public returns (uint256 initProtectNumber){
-        if(accountInfos[msg.sender].lastActionBlockNumber > 0)
-            revert AccountAlreadyJoinGame(msg.sender);
+        if(accountInfos[msg.sender].lastActionBlockNumber > 0 || msg.sender == address(0))
+            revert InvalidAccount(msg.sender);
         watchDogInfos[msg.sender].status = AttackStatus.Revert;
         setAccountActionModifyBlock(msg.sender, AccountAction.StartGame);
 

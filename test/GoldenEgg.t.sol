@@ -28,7 +28,7 @@ contract GoldenEggTest is Test, GoldenEggScript {
     bytes4 selectorFailedToAddProtectNumber = bytes4(keccak256("FailedToAddProtectNumber(address,uint256)"));
     bytes4 selectorFailedToRemoveProtectNumber = bytes4(keccak256("FailedToRemoveProtectNumber(address,uint256)"));
     bytes4 selectorInvalidInputNumber = bytes4(keccak256("InvalidInputNumber(address,uint256)"));
-    bytes4 selectorAccountAlreadyJoinGame = bytes4(keccak256("AccountAlreadyJoinGame(address)"));
+    bytes4 selectorInvalidAccount = bytes4(keccak256("InvalidAccount(address)"));
     bytes4 selectorInvalidPayment = bytes4(keccak256("InvalidPayment(address,uint256)"));
     bytes4 selectorFailedToBuyHen = bytes4(keccak256("FailedToBuyHen(address,uint256)"));
     bytes4 selectorReachedPurchaseLimit = bytes4(keccak256("ReachedPurchaseLimit(address,uint256)"));
