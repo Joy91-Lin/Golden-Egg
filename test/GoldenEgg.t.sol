@@ -9,6 +9,36 @@ contract GoldenEggTest is Test, GoldenEggScript {
     address user2 = makeAddr("user2");
     address nonJoinGame = makeAddr("nonJoinGame");
 
+    /** AdminControl **/
+    bytes4 selectorSenderMustBeAdmin = bytes4(keccak256("SenderMustBeAdmin(address)"));
+    /** BirthFactory **/
+    bytes4 selectorInvalidHenId = bytes4(keccak256("InvalidHenId(uint256)"));
+    bytes4 selectorInvalidDogId = bytes4(keccak256("InvalidDogId(uint256)"));
+    /** ChickenCoop */
+    bytes4 selectorFailedToPutUpHen = bytes4(keccak256("FailedToPutUpHen(address,uint256,uint256,bool)"));
+    bytes4 selectorFailedToTakeDownHen = bytes4(keccak256("FailedToTakeDownHen(address,uint256,uint256)"));
+    bytes4 selectorInvalidSeatIndex = bytes4(keccak256("InvalidSeatIndex(address,uint256)"));
+    bytes4 selectorDonotHaveHenInSeat = bytes4(keccak256("DonotHaveHenInSeat(address,uint256,uint256)"));
+    bytes4 selectorInvalidExchangeFee = bytes4(keccak256("InvalidExchangeFee(address,uint256)"));
+    bytes4 selectorInsufficientAmount = bytes4(keccak256("InsufficientAmount(address,uint256)"));
+    bytes4 selectorHenIsFull = bytes4(keccak256("HenIsFull(address,uint256,uint256)"));
+    /** GoldenTop **/
+    bytes4 selectorTargetDoesNotJoinGameYet = bytes4(keccak256("TargetDoesNotJoinGameYet(address)"));
+    /** GoldenEgg **/
+    bytes4 selectorFailedToAddProtectNumber = bytes4(keccak256("FailedToAddProtectNumber(address,uint256)"));
+    bytes4 selectorFailedToRemoveProtectNumber = bytes4(keccak256("FailedToRemoveProtectNumber(address,uint256)"));
+    bytes4 selectorInvalidInputNumber = bytes4(keccak256("InvalidInputNumber(address,uint256)"));
+    bytes4 selectorAccountAlreadyJoinGame = bytes4(keccak256("AccountAlreadyJoinGame(address)"));
+    bytes4 selectorInvalidPayment = bytes4(keccak256("InvalidPayment(address,uint256)"));
+    bytes4 selectorFailedToBuyHen = bytes4(keccak256("FailedToBuyHen(address,uint256)"));
+    bytes4 selectorReachedPurchaseLimit = bytes4(keccak256("ReachedPurchaseLimit(address,uint256)"));
+    bytes4 selectorFailedToBuyWatchDog = bytes4(keccak256("FailedToBuyWatchDog(address,uint256)"));
+    bytes4 selectorFailedtakeOutProtocolIncome = bytes4(keccak256("FailedtakeOutProtocolIncome(address,address,uint256)"));
+    /** WatchDog **/
+    bytes4 selectorAccountIsBeingAttacked = bytes4(keccak256("AccountIsBeingAttacked(address)"));
+    bytes4 selectorFailedToChangeWatchDog = bytes4(keccak256("FailedToChangeWatchDog(address,uint256)"));
+    bytes4 selectorFailedToOpenProtectShell = bytes4(keccak256("FailedToOpenProtectShell(address)"));
+
     enum AttackStatus {
         None,
         Pending,
@@ -84,28 +114,31 @@ contract GoldenEggTest is Test, GoldenEggScript {
     function test_checkUserJoinGame()public{
         assertTrue(goldenEgg.isAccountJoinGame(user1));
         assertTrue(goldenEgg.isAccountJoinGame(user2));
-        bytes4 selector = bytes4(keccak256("TargetDoesNotJoinGameYet(address)"));
-        vm.expectRevert(abi.encodeWithSelector(selector, nonJoinGame));
+        vm.expectRevert(abi.encodeWithSelector(selectorTargetDoesNotJoinGameYet, nonJoinGame));
         goldenEgg.isAccountJoinGame(nonJoinGame);
     }
 
     function test_feedHen()public{
         vm.startPrank(user1);
-        vm.expectRevert("ChickenCoop: Hen is full.");
+        // can't feed hen if hen is full
+        vm.expectRevert(abi.encodeWithSelector(selectorHenIsFull, user1, 0, goldenEgg.getCoopSeatInfo(false)[0].id));
         goldenEgg.feedOwnHen(0, 100);
 
-        vm.expectRevert("ChickenCoop: seat is not opened");
+        // can't feed hen if target don't have that seat
+        vm.expectRevert(abi.encodeWithSelector(selectorInvalidSeatIndex, user1, 1));
         goldenEgg.feedOwnHen(1, 100);
 
+        // can't feed hen if target don't have hen in that seat
         goldenEgg.buyChickenCoopSeats{value:goldenEgg.getSellPrice().seatEthPrice}(1, false);
-        vm.expectRevert("ChickenCoop: No hen in this seat");
+        vm.expectRevert(abi.encodeWithSelector(selectorDonotHaveHenInSeat, user1, 1, goldenEgg.getCoopSeatInfo(false)[1].id));
         goldenEgg.feedOwnHen(1, 100);
 
-        // Failed to help feed others hen
-        vm.expectRevert("ChickenCoop: Hen is full.");
+        // can't help feed hen if hen is full
+        vm.expectRevert(abi.encodeWithSelector(selectorHenIsFull, user2, 0, goldenEgg.getHenHunger(user2, 0).id));
         goldenEgg.helpFeedHen(user2, 0, 100);
 
-        vm.expectRevert("ChickenCoop: seat is not opened");
+        // can't help feed hen if target don't have that seat
+        vm.expectRevert(abi.encodeWithSelector(selectorInvalidSeatIndex, user2, 1));
         goldenEgg.helpFeedHen(user2, 1, 100);
 
         // digest some food
@@ -128,10 +161,33 @@ contract GoldenEggTest is Test, GoldenEggScript {
         // help feed others hen
         vm.startPrank(user2);
         preBalance = eggToken.balanceOf(user2);
-        goldenEgg.helpFeedHen(user1, 0, 2 * 10 ** eggToken.decimals());
-        assertEq(2 * 10 ** eggToken.decimals(), preBalance - eggToken.balanceOf(user2));
+        goldenEgg.helpFeedHen(user1, 0, 1 * 10 ** eggToken.decimals());
+        assertEq(1 * 10 ** eggToken.decimals(), preBalance - eggToken.balanceOf(user2));
         vm.stopPrank();
 
+        // can get hen hunger whether enter game or not.
+        vm.startPrank(nonJoinGame);
+        uint nonJoinFeedAmount = 1 * 10 ** eggToken.decimals();
+        // nonJoinGame don't have any eggToken, so can't feed hen
+        vm.expectRevert(abi.encodeWithSelector(selectorInsufficientAmount, user1, nonJoinFeedAmount));
+        goldenEgg.helpFeedHen(user1, 0, nonJoinFeedAmount);
+
+        deal(address(eggToken), nonJoinGame, 1 * 10 ** eggToken.decimals());
+        goldenEgg.helpFeedHen(user1, 0, nonJoinFeedAmount);
+        uint maxFoodIntake =  goldenEgg.getHenHunger(user1, 0).maxFoodIntake;
+        uint foodIntake =  goldenEgg.getHenHunger(user1, 0).foodIntake;
+        vm.stopPrank();
+
+
+        // Althrough user feed amount is greater than maxFoodIntake, but hen can only eat maxFoodIntake
+        uint biggerThanMaxFoodIntake = maxFoodIntake - foodIntake + 3 * 10 ** eggToken.decimals();
+        vm.startPrank(user1);
+        preBalance = eggToken.balanceOf(user1);
+        goldenEgg.feedOwnHen(0, biggerThanMaxFoodIntake);   
+        assertEq(goldenEgg.getHenCatalog(0).maxFoodIntake, goldenEgg.getCoopSeatInfo(0, false).foodIntake);
+        assertEq(maxFoodIntake - foodIntake, preBalance - eggToken.balanceOf(user1));
+        assertLt(preBalance - eggToken.balanceOf(user1), biggerThanMaxFoodIntake);
+        vm.stopPrank();
     }
 
 }
