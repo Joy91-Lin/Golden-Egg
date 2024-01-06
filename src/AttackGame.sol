@@ -207,8 +207,8 @@ contract AttackGame is VRFV2WrapperConsumerBase, Ownable, IAttckGameEvent{
         if(dumpLitterAmount > maxLitterReward){
             dumpLitterAmount = maxLitterReward;
         }
-
-        IToken(litterTokenAddress).transfer(attacker, target, dumpLitterAmount);
+        if(dumpLitterAmount > 0)
+            IToken(litterTokenAddress).transfer(attacker, target, dumpLitterAmount);
         return dumpLitterAmount;
     }
 
