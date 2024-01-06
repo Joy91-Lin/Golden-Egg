@@ -4,21 +4,11 @@ import "./AdminControl.sol";
 
 interface IGoldenTop{
     function checkActivated(address account) external view returns (bool);
-    function getAccountLastModifyBlockNumber(address account) external view returns(uint);
-    function getCurrentBlockNumber() external view returns (uint256);
     function isAccountJoinGame(address account) external view returns (bool);
-    function getTotalTrashCanAmount(address account) external view returns (uint256);
-}
-
-interface IGoldenTopEvent{
-    event AccountLastestAction(address indexed account, uint indexed blockNumber, GoldenTop.AccountAction indexed action);
-}
-
-interface IGoldenTopError{
-    error TargetDoesNotJoinGameYet(address target);
 }
  
-contract GoldenTop is IGoldenTop, IGoldenTopEvent, IGoldenTopError, AdminControl {
+contract GoldenTop is AdminControl {
+    event AccountLastestAction(address indexed account, uint indexed blockNumber, AccountAction indexed action);
     enum AccountAction{
         StartGame,
         HelpOthers,
@@ -51,7 +41,7 @@ contract GoldenTop is IGoldenTop, IGoldenTopEvent, IGoldenTopError, AdminControl
     uint constant BLOCKAMOUNT = 40_000; // around 7 days if creating a block take 15 second
 
     uint constant handlingFeeEther = 0.0001 ether;
-    uint256 constant attackRange = 100;
+    uint256 public constant attackRange = 100;
     uint256 immutable maxTotalProtectNumbers = attackRange / 2;
     uint constant maxCoopSeat = 20;
     uint256 constant MANTISSA = 10 ** 18;
@@ -59,20 +49,21 @@ contract GoldenTop is IGoldenTop, IGoldenTopEvent, IGoldenTopError, AdminControl
     address public eggTokenAddress;
     address public litterTokenAddress;
     address public shellTokenAddress;
+    address public attackGameAddress;
 
     function setUpAddress(
         address _eggTokenAddress,
         address _litterTokenAddress,
-        address _shellTokenAddress
+        address _shellTokenAddress,
+        address _attackGameAddress
     ) public onlyOwner{
         eggTokenAddress = _eggTokenAddress;
         litterTokenAddress = _litterTokenAddress;
         shellTokenAddress = _shellTokenAddress;
-        allowers[_eggTokenAddress] = true;
-        allowers[_litterTokenAddress] = true;
-        allowers[_shellTokenAddress] = true;
-        allowers[msg.sender] = true;
+        attackGameAddress = _attackGameAddress;
+        allowers[attackGameAddress] = true;
         allowers[address(this)] = true;
+        allowers[msg.sender] = true;
     }
 
     function setAccountActionModifyBlock(address account,AccountAction action) internal {
@@ -83,8 +74,8 @@ contract GoldenTop is IGoldenTop, IGoldenTopEvent, IGoldenTopError, AdminControl
     }
 
     function checkActivated(address account) public view returns (bool){
+        isAccountJoinGame(account);
         uint accountLastModifyBlockNumber = accountInfos[account].lastActionBlockNumber;
-        require(accountLastModifyBlockNumber == 0, "GoldenTop: This address haven't join Golden-Egg.");
         
         uint around7days = getCurrentBlockNumber() - BLOCKAMOUNT;
         if(accountLastModifyBlockNumber > around7days){
