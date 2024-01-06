@@ -224,4 +224,17 @@ contract AttackGame is VRFV2WrapperConsumerBase, Ownable, IAttckGameEvent{
     function getAttackInfo(uint256 requestId) external view returns(Attack memory){
         return attacks[requestId];
     }
+
+    function takeOutIncome() public onlyOwner{
+        IERC20(linkAddress).transfer(owner(), IERC20(linkAddress).balanceOf(address(this)));
+    }
+    
+    function takeOutIncome(uint linkBalance) public onlyOwner{
+        IERC20(linkAddress).transfer(owner(), linkBalance);
+    }
+
+    function getContractBalance() public onlyOwner view returns(uint256){
+        return IERC20(linkAddress).balanceOf(address(this));
+    }
+
 }
