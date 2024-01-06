@@ -39,6 +39,7 @@ contract AttackGame is VRFV2WrapperConsumerBase, Ownable, IAttckGameEvent{
     mapping(uint256 => Attack) attacks;
     uint256 constant minEggTokenReward = 300 * 10 ** 18;
     uint256 constant maxEggTokenReward = 1000 * 10 ** 18;
+    uint256 constant minLitterReward = 10 * 10 ** 18;
     uint256 constant maxLitterReward = 1000 * 10 ** 18;
     uint256 constant targetShellReward = 100 * 10 ** 18;
     uint256 constant closeFactorMantissa = 0.2 * 10 ** 18;
@@ -90,10 +91,10 @@ contract AttackGame is VRFV2WrapperConsumerBase, Ownable, IAttckGameEvent{
         require(goldenEgg.canAttack(target), "Target can not be attack now .");
 
         // target have egg token
-        require(IToken(eggTokenAddress).balanceOf(target) > 0, "Target have no Egg Token!");
+        require(IToken(eggTokenAddress).balanceOf(target) > minEggTokenReward, "Target is a shortage of eggToken!");
 
         // 垃圾桶為滿
-        require(IToken(litterTokenAddress).balanceOf(target) < goldenEgg.getTotalTrashCanAmount(target) , "Trash can is full!");
+        require(IToken(litterTokenAddress).balanceOf(target) <= goldenEgg.getTotalTrashCanAmount(target) - minLitterReward , "Trash can is around full!");
 
         IERC20(linkAddress).transferFrom(msg.sender, address(this), vrfFee);
 
