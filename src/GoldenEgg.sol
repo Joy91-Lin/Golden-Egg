@@ -6,7 +6,7 @@ import "./Token.sol";
 contract GoldenEgg is ChickenCoop, WatchDog {
 
     uint256 public constant maxDurabilityOfProtectNumber = 10;
-    uint256 public constant unitTrashCanSpace = 100;
+    uint256 public constant unitTrashCanSpace = 10 ** 18;
     uint256 public constant maxPurchaseLimit = 10;
     struct Price {
         uint256 addProtectNumberEthPrice;
