@@ -26,23 +26,18 @@
 
 #### Development
 - Contract
-	
-	Sepolia
   
     modify .env.example to .env
     ```
     PRIVATE_KEY = [YOUR_PRIVATE_KEY]
     OWNER = [YOUR_ADDRESS]
+    ETHERSCAN_API_KEY = [YOUR_ETHERSCAN_API_KEY]
     ```
-    modify foundry.toml.example to foundry.toml
-    ```
-    etherscan_api_key = [YOUR_ETHERSCAN_API_KEY]
-    rpc_endpoints = {sepolia = [YOUR_RPC_URL]}
-    ```
+    
     execute forge script to deploy contract on Sepolia testnet
-	```
-	forge script script/GoldenEgg.s.sol:GoldenEggScript --broadcast --verify
-	```
+    ```
+    forge script script/GoldenEgg.s.sol:GoldenEggScript --broadcast --verify --rpc-url https://eth-sepolia.g.alchemy.com/v2/{api_key} 
+    ```
 
 - Contract Address (Sepolia):
 	- GoldenEgg:
