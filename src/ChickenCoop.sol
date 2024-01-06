@@ -15,16 +15,7 @@ interface IChickenCoop{
     function payIncentive(address target) external;
 }
 
-interface IChickenCoopEvent{
-    event PutUpHenToCoopSeats(address indexed sender, uint256 seatIndex, uint256 henId);
-    event TakeDownHenFromCoopSeats(address indexed sender, uint256 seatIndex, uint256 henId);
-    event FeedHen(address indexed sender, address indexed target, uint256 seatIndex, uint256 feedAmount);
-    event OutOfGasLimit(uint256 gasUsed, uint256 startCheckBlockNumber, uint256 endCheckBlockNumber);
-    event LayEGGs(uint256 seatIndex, uint256 eggToken, uint256 litterToken, uint256 protectShell);
-    event TrashCanFull(uint256 seatIndex, uint256 henId, uint256 missingEggToken);
-}
-
-contract ChickenCoop is BirthFactory, IChickenCoopEvent {
+contract ChickenCoop is BirthFactory {
 
     struct CoopSeat {
         bool isOpened;
@@ -53,12 +44,11 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         
         ownHenId(msg.sender, henId);
 
-        CoopSeat memory coopSeat = coopSeats[msg.sender][seatIndex];
         if(!forceExchange){
             payIncentive(msg.sender);
 
-            require(!coopSeat.isExisted, 
-                "ChickenCoop: Already have hen in this seat.Please use takeDownHen or Force Mode to exchange hen.");
+            if(coopSeats[msg.sender][seatIndex].isExisted) 
+                revert FailedToPutUpHen(msg.sender, coopSeats[msg.sender][seatIndex].id, seatIndex, coopSeats[msg.sender][seatIndex].isExisted);
         }
 
         uint henInCoopCount = accountInfos[msg.sender].hensInCoop[henId];
@@ -84,13 +74,14 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         exchangeCoopSeatsPreCheck(msg.sender, msg.value, seatIndex);
 
         CoopSeat memory coopSeat = coopSeats[msg.sender][seatIndex];
-        require(coopSeat.isExisted, "ChickenCoop: Seat is already empty.");
+        if(!coopSeat.isExisted)
+            revert DonotHaveHenInSeat(msg.sender, seatIndex, coopSeat.id);
 
         if(!forceExchange){
             payIncentive(msg.sender);
 
             if(coopSeat.foodIntake > 0 || coopSeat.layingLeftCycle > 0){
-                    revert("ChickenCoop: Not ready to take down.");
+                    revert FailedToTakeDownHen(msg.sender, coopSeat.id, seatIndex);
             }
         }
         
@@ -105,10 +96,10 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
     }
 
     function ownHenId(address sender, uint henId) internal view {
-        require(hensCatalog[henId].layingCycle > 0, "ChickenCoop: Invalid hen id.");
         uint256 totalHen = accountInfos[sender].totalOwnHens[henId];
         uint256 henInCoop = accountInfos[sender].hensInCoop[henId];
-        require(totalHen - henInCoop > 0 , "ChickenCoop: Insufficient Hen.");
+        if(hensCatalog[henId].layingCycle == 0 || totalHen - henInCoop == 0) 
+            revert InvalidHenId(henId);
     }
 
     function exchangeCoopSeatsPreCheck(address sender, uint value, uint seatIndex) internal {
@@ -119,15 +110,18 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
 
 
     function checkSeatExist(address sender, uint index) internal view {
-        require(coopSeats[sender][index].isOpened, "ChickenCoop: Seat is not opened.");
+        if(!coopSeats[sender][index].isOpened) 
+            revert InvalidSeatIndex(sender, index);
     }
 
     function checkExchangeFee(address sender, uint value) internal {
         if(value > 0){
-            require(value == handlingFeeEther, "ChickenCoop: Incorrect fee.");
+            if(value != handlingFeeEther) 
+                revert InvalidExchangeFee(sender, value);
         } else{
             uint256 handlingFeeEggToken = handlingFeeEther * IToken(eggTokenAddress).getRatioOfEth();
-            require(IToken(eggTokenAddress).balanceOf(sender) >= handlingFeeEggToken, "Not enough egg token.");
+            if(IToken(eggTokenAddress).balanceOf(sender) < handlingFeeEggToken)
+                revert InvalidExchangeFee(sender, value);
             IToken(eggTokenAddress).burn(sender, handlingFeeEggToken);
         }
     }
@@ -311,15 +305,17 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
     
     function feedHen(address sender, address target, uint seatIndex, uint feedAmount) internal {
         CoopSeat memory coopSeat = coopSeats[target][seatIndex];
-        require(coopSeat.isOpened, "ChickenCoop: seat is not opened");
-        require(coopSeat.isExisted, "ChickenCoop: No hen in this seat");
-        require(feedAmount > 0, "ChickenCoop: feed amount must be greater than 0");
-        require(IToken(eggTokenAddress).balanceOf(sender) >= feedAmount, "ChickenCoop: Not enough egg token");
+        if(!coopSeat.isOpened)
+            revert InvalidSeatIndex(target, seatIndex);
+        if(!coopSeat.isExisted)
+            revert DonotHaveHenInSeat(target, seatIndex, coopSeat.id);
+        if(feedAmount == 0 || IToken(eggTokenAddress).balanceOf(sender) < feedAmount)
+            revert InsufficientAmount(target, feedAmount);
 
         HenCharacter memory hen = hensCatalog[coopSeat.id];
         uint256 foodIntake = coopSeat.foodIntake;
         uint256 maxFoodIntake = hen.maxFoodIntake;
-        if(foodIntake >= maxFoodIntake) revert("ChickenCoop: Hen is full.");
+        if(foodIntake >= maxFoodIntake) revert HenIsFull(target, seatIndex, coopSeat.id);
         uint256 totalFoodIntake = foodIntake + feedAmount;
 
         if(totalFoodIntake > maxFoodIntake){
@@ -358,8 +354,10 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
     function getHenHunger(address target, uint seatIndex) public view returns (FoodIntake memory){
         isAccountJoinGame(target);
         CoopSeat memory coopSeat = coopSeats[target][seatIndex];
-        require(coopSeat.isOpened, "ChickenCoop: Invalid seat index.");
-        require(coopSeat.isExisted, "ChickenCoop: No hen in this seat.");
+        if(!coopSeat.isOpened)
+            revert InvalidSeatIndex(target, seatIndex);
+        if(!coopSeat.isExisted)
+            revert DonotHaveHenInSeat(target, seatIndex, coopSeat.id);
 
         HenCharacter memory hen = hensCatalog[coopSeat.id];
         return FoodIntake(seatIndex, true, coopSeat.id, coopSeat.foodIntake, hen.maxFoodIntake);
@@ -386,8 +384,10 @@ contract ChickenCoop is BirthFactory, IChickenCoopEvent {
         if(_payIncentive)
             payIncentive(msg.sender);
         CoopSeat memory coopSeat = coopSeats[msg.sender][seatIndex];
-        require(coopSeat.isOpened, "ChickenCoop: Invalid seat index.");
-        require(coopSeat.isExisted, "ChickenCoop: No hen in this seat.");
+        if(!coopSeat.isOpened)
+            revert InvalidSeatIndex(msg.sender, seatIndex);
+        if(!coopSeat.isExisted)
+            revert DonotHaveHenInSeat(msg.sender, seatIndex, coopSeat.id);
         return coopSeat;
     }
 }
