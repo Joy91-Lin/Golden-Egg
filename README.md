@@ -34,12 +34,12 @@
     forge script script/GoldenEgg.s.sol:GoldenEggScript --broadcast --verify --rpc-url https://eth-sepolia.g.alchemy.com/v2/{api_key} 
     ```
 
-- Contract Address:
-	- GoldenEgg:
-	- AttackGame:
-	- EggToken:
-	- LitterToken:
-	- ProtectShellToken:
+- Contract Address (Sepolia) :
+	- GoldenEgg:0x79BAa106e3c69C2e59d7b2E4d71a53083F680526
+	- AttackGame:0x4d6f8138F02d5985D66800ea55671786Ae777a01
+	- EggToken:0xCBB194208870E60178D94554ae44750d64F2fAA9
+	- LitterToken:0xCB972346AF1B8B9aC1BA1e8D2b5A2b1aB367Ffd5
+	- ProtectShellToken:0xd85F6421AeA52696E6Ae522eDbfceD7bC11104cC
 
 #### Testing
 + GoldenEgg.t.sol
