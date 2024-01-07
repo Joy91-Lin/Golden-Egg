@@ -136,11 +136,15 @@ contract BirthFactory is GoldenTop {
     }
 
     function checkHenExists(uint256 _henId) internal view {
-        if(_henId >= totalHenCharacters) revert InvalidHenId(_henId);
+        if(hensCatalog[_henId].layingCycle == 0 &&
+            hensCatalog[_henId].consumeFoodForOneBlock == 0 
+        ) revert InvalidHenId(_henId);
     }
 
     function checkDogExists(uint256 _dogId) internal view {
-        if(_dogId >= totalDogCharacters) revert InvalidDogId(_dogId);
+        if(dogsCatalog[_dogId].compensationPercentageMantissa == 0 && 
+        dogsCatalog[_dogId].lostPercentageMantissa == 0) 
+            revert InvalidDogId(_dogId);
     }
 
     /** struct HenCharacter **/
