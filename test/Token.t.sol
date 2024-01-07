@@ -96,7 +96,7 @@ contract TokenTest is Test, GoldenEggScript{
         assertEq(eggToken.balanceOf(user1), preBalanceUser1 + 10_000 - 100);
         assertEq(eggToken.balanceOf(user2), preBalanceUser2 + 100);
 
-        // user1 can not transfer
+        // user1 can not transfer directly
         vm.startPrank(user1);
         vm.expectRevert(abi.encodeWithSelector(adminErrorSelector, user1));
         eggToken.transferFrom(user1, user2, 100);

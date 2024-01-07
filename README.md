@@ -50,6 +50,18 @@
   - test_entryGameInitValue - 檢查進入遊戲後初始數值，給予一隻雞和狗，並將雞上架飼養、上架狗。
   - test_checkUserJoinGame() - 檢查isAccountJoinGame()
   - test_feedHen() - 檢查餵食雞消耗的eggToken
+- AttackGame.t.sol
+  - setUp() - user1, user2 進入遊戲，並給予一些litterToken
+  - test_entryGameInitValue() - 檢查玩家初始數值
+  - test_attackSuccess() - 測試attack game攻擊成功的情況
+  - test_attackFail() - 測試attack game攻擊失敗的情況
+- Token.t.sol
+  - setUp() - user1, user2 進入遊戲
+  - test_AdminControl() - 檢查Admin身份
+  - test_mint() - 檢查只有Admin身份可以mint token
+  - test_RatioOfEth() - 檢查eggToken/litterToken/ProtectShellToken之間的比例
+  - test_burn() - 檢查只有Admin身份可以burn token
+  - test_transfer() - 檢查只有Admin身份可以直接傳遞token，玩家僅能利用遊戲內部提供的管道傳遞。
 #### Usage
 
 + 遊戲主軸
@@ -69,7 +81,9 @@
     - 購買EggToken - 傳入ETH兌換相應比例的EggToken
     - 購買ProtectShellToken - 傳入ETH兌換相應比例的ProtectShellToken
     - 清除EggToken - 傳入ETH清除相應比例的LitterToken，在被攻擊狀態時不可執行。
-    - 以上購買行為都可以自行選擇是否在購買的時候激活農場的發放獎勵機制。
+    - 傳遞EggToken - 單次傳送量不可超過上限(10,000)。
+    - 傳遞ProtectShellToken - 單次傳送量不可超過上限(10,000)。
+    - 以上行為都可以自行選擇是否在購買的時候激活農場的發放獎勵機制。
   - 看守
     - 消耗ProtectShellToken來開啟防護抵禦其他農場主的攻擊，會收執行費，可自行選擇支付ETH或是使用EggToken扣款
     - 每一單位的ProtectShellToken(10 ** 18)，代表防護 1 個區塊時間
