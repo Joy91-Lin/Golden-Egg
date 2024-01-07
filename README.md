@@ -19,6 +19,8 @@
 - AttackGame：進攻其他農場，成功攻擊者會從目標農場獲得部分獎勵(EggToken)並將農場中的部分垃圾(LitterToken)轉移到目標農場，目標農場會在被攻擊後開啟防護罩並另外得到ProtectShellToken作為補償，以上數值依據目標農場的看守狗計算。
 - GoldenEgg：玩家進入遊戲點和購物商場，繼承 ChickenCoop, WatchDog。
 
+![Image text](https://github.com/Joy91-Lin/Golden-Egg/blob/main/GoldenEgg_Framework.png)
+
 #### Development
 - Contract
   
