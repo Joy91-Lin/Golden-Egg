@@ -96,7 +96,7 @@ contract ChickenCoop is BirthFactory {
     }
 
     function ownHenId(address sender, uint henId) internal view {
-        uint256 totalHen = accountInfos[sender].totalOwnHens[henId];
+        uint256 totalHen = accountInfos[sender].ownHens[henId];
         uint256 henInCoop = accountInfos[sender].hensInCoop[henId];
         if(hensCatalog[henId].layingCycle == 0 || totalHen - henInCoop == 0) 
             revert InvalidHenId(henId);

@@ -127,18 +127,14 @@ contract AttackGame is VRFV2WrapperConsumerBase, Ownable, IAttckGameEvent{
         Attack memory attackInfo = attacks[requestId];
         require(attackInfo.status == AttackStatus.Pending, "Attack already completed");
         require(attackInfo.chainLinkFees > 0, "Request not found");
-
+        
         uint256 attackRandom = (randomWords[0] % goldenEgg.attackRange()) + 1;
         
-        attackInfo.attackRandom = attackRandom;
+        attacks[requestId].attackRandom = attackRandom;
 
-        uint256 durabilityOfProtectNumber = goldenEgg.getAccountProtectNumbers(attackInfo.target, attackRandom);
+        uint256 durabilityOfProtectNumber = goldenEgg.getAccountProtectNumberDurability(attackInfo.target, attackRandom);
         bool attackResult = false;
         uint256 targetDebt = 0;
-        // if(durabilityOfProtectNumber > 0){
-        //     // attack fail
-        //     goldenEgg.attackGameFailed(attackInfo.target, attackRandom);
-        // } else {
         if(durabilityOfProtectNumber == 0){
             // attack success
             attackResult = true;

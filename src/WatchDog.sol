@@ -69,7 +69,7 @@ contract WatchDog is BirthFactory{
         isAccountJoinGame(msg.sender);
         isAttackStatusPending(msg.sender);
         WatchDogInfo memory watchDog = watchDogInfos[msg.sender];
-        if(!accountInfos[msg.sender].totalOwnWatchDogs[id])
+        if(!accountInfos[msg.sender].ownWatchDogs[id])
             revert InvalidDogId(id);
         checkFee(msg.sender, msg.value);
 
@@ -208,12 +208,12 @@ contract WatchDog is BirthFactory{
         
     //     attackInfo.attackRandom = attackRandom;
 
-    //     uint256 targetProtectNumber = accountInfos[attackInfo.target].protectNumbers[attackRandom];
+    //     uint256 targetProtectNumber = accountInfos[attackInfo.target].durabilityOfProtectNumber[attackRandom];
     //     bool attackResult = false;
     //     if(targetProtectNumber > 0){
     //         // attack fail
-    //         accountInfos[attackInfo.target].protectNumbers[attackRandom]--;
-    //         if(accountInfos[attackInfo.target].protectNumbers[attackRandom] == 0){
+    //         accountInfos[attackInfo.target].durabilityOfProtectNumber[attackRandom]--;
+    //         if(accountInfos[attackInfo.target].durabilityOfProtectNumber[attackRandom] == 0){
     //             accountInfos[attackInfo.target].totalProtectNumbers--;
     //         }
     //     } else {
@@ -341,8 +341,8 @@ contract WatchDog is BirthFactory{
             watchDogInfos[target].protectShellEndBlockNumber = currentBlock + targetShellRewardAmount;
             accountInfos[target].debtEggToken += targetDebt;
         } else{
-            accountInfos[target].protectNumbers[attackNumber]--;
-            if(accountInfos[target].protectNumbers[attackNumber] == 0){
+            accountInfos[target].durabilityOfProtectNumber[attackNumber]--;
+            if(accountInfos[target].durabilityOfProtectNumber[attackNumber] == 0){
                 accountInfos[target].totalProtectNumbers--;
             }
         }

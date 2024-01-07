@@ -52,11 +52,11 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
         accountInfos[msg.sender].totalCoopSeats = initCoopSeats;
         accountInfos[msg.sender].totalTrashCan = initTrashCan * 10 ** IToken(litterTokenAddress).decimals();
-        accountInfos[msg.sender].totalOwnHens[initFirstHen] = 1;
-        accountInfos[msg.sender].totalOwnWatchDogs[initFirstWatchDog] = true;
+        accountInfos[msg.sender].ownHens[initFirstHen] = 1;
+        accountInfos[msg.sender].ownWatchDogs[initFirstWatchDog] = true;
         accountInfos[msg.sender].totalProtectNumbers = initProtectNumbers;
         initProtectNumber = (uint(keccak256(abi.encodePacked(block.timestamp, msg.sender))) % attackRange) + 1;
-        accountInfos[msg.sender].protectNumbers[initProtectNumber] = maxDurabilityOfProtectNumber;
+        accountInfos[msg.sender].durabilityOfProtectNumber[initProtectNumber] = maxDurabilityOfProtectNumber;
         accountInfos[msg.sender].lastPayIncentiveBlockNumber = getCurrentBlockNumber();
         accountInfos[msg.sender].lastCheckHenIndex = 0;
         accountInfos[msg.sender].debtEggToken = initDebtEggToken;
@@ -127,7 +127,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         isAccountJoinGame(msg.sender);
         isAttackStatusPending(msg.sender);
         if(accountInfos[msg.sender].totalProtectNumbers >= maxTotalProtectNumbers||
-            accountInfos[msg.sender].protectNumbers[_protectNumber] > 0)
+            accountInfos[msg.sender].durabilityOfProtectNumber[_protectNumber] > 0)
             revert FailedToAddProtectNumber(msg.sender, _protectNumber);
         if(_protectNumber == 0 || _protectNumber > attackRange)
             revert InvalidInputNumber(msg.sender, _protectNumber);
@@ -135,7 +135,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         bool success = checkBill(msg.sender, msg.value, getSellPrice().addProtectNumberEthPrice);
         if(success){
             accountInfos[msg.sender].totalProtectNumbers++;
-            accountInfos[msg.sender].protectNumbers[_protectNumber] = maxDurabilityOfProtectNumber;
+            accountInfos[msg.sender].durabilityOfProtectNumber[_protectNumber] = maxDurabilityOfProtectNumber;
         }
         if (_payIncentive) {
             payIncentive(msg.sender);
@@ -147,7 +147,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
     function removeProtectNumber(uint256 _protectNumber, bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         isAttackStatusPending(msg.sender);
-        if(accountInfos[msg.sender].protectNumbers[_protectNumber] == 0)
+        if(accountInfos[msg.sender].durabilityOfProtectNumber[_protectNumber] == 0)
             revert FailedToRemoveProtectNumber(msg.sender, _protectNumber);
         if(_protectNumber == 0 || _protectNumber > attackRange)
             revert InvalidInputNumber(msg.sender, _protectNumber);
@@ -155,7 +155,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         bool success = checkBill(msg.sender, msg.value, getSellPrice().removeProtectNumberEthPrice);
         if(success){
             accountInfos[msg.sender].totalProtectNumbers--;
-            accountInfos[msg.sender].protectNumbers[_protectNumber] = 0;
+            accountInfos[msg.sender].durabilityOfProtectNumber[_protectNumber] = 0;
         }
         if (_payIncentive) {
             payIncentive(msg.sender);
@@ -296,7 +296,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         if(!hen.isOnSale || (hen.ethPrice == 0 && hen.eggPrice == 0))
             revert FailedToBuyHen(buyer, _henId);
         uint256 maxOwnNumber = hen.purchaselimit;
-        uint256 nowOwnNumber = accountInfos[buyer].totalOwnHens[_henId];
+        uint256 nowOwnNumber = accountInfos[buyer].ownHens[_henId];
         if(nowOwnNumber + 1 >= maxOwnNumber)
             revert ReachedLimit(buyer, maxOwnNumber);
         
@@ -313,14 +313,14 @@ contract GoldenEgg is ChickenCoop, WatchDog {
                 revert InvalidPayment(buyer, IToken(eggTokenAddress).balanceOf(buyer));
             IToken(eggTokenAddress).burn(buyer, hen.eggPrice);
         }
-        accountInfos[buyer].totalOwnHens[_henId]++;
+        accountInfos[buyer].ownHens[_henId]++;
     }
 
     function checkDogBillAndDelivered(address buyer, uint256 _dogId, uint256 value) internal {
         DogCharacter memory dog = dogsCatalog[_dogId];
         if(!dog.isOnSale || (dog.ethPrice == 0 && dog.eggPrice == 0))
             revert FailedToBuyWatchDog(buyer, _dogId);
-        if(accountInfos[buyer].totalOwnWatchDogs[_dogId])
+        if(accountInfos[buyer].ownWatchDogs[_dogId])
             revert ReachedLimit(buyer, 1);
 
         if (value > 0) {
@@ -335,7 +335,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
                 revert InvalidPayment(buyer, IToken(eggTokenAddress).balanceOf(buyer));
             IToken(eggTokenAddress).burn(buyer, dog.eggPrice);
         }
-        accountInfos[buyer].totalOwnWatchDogs[_dogId] = true;
+        accountInfos[buyer].ownWatchDogs[_dogId] = true;
     }
 
     function checkBill(address buyer, uint256 value,uint ethPrice)internal returns (bool){
@@ -370,11 +370,4 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         return address(this).balance;
     }
 
-    function setDemoCannotAttackAccount(address demoAddress) public {
-        onlyContractOwner();
-        accountInfos[demoAddress].totalProtectNumbers = 100;
-        for(uint i = 1; i <= 100; i++){
-            accountInfos[demoAddress].protectNumbers[i] = 10;
-        }
-    }
 }

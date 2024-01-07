@@ -26,11 +26,11 @@ contract GoldenTop is AdminControl {
     struct AccountInfo{
         uint256 totalCoopSeats;
         uint256 totalTrashCan;
-        mapping(uint256 => uint256) totalOwnHens;
+        mapping(uint256 => uint256) ownHens;
         mapping(uint256 => uint256) hensInCoop;
-        mapping(uint256 => bool) totalOwnWatchDogs;
+        mapping(uint256 => bool) ownWatchDogs;
         uint256 totalProtectNumbers;
-        mapping(uint256 => uint256) protectNumbers;
+        mapping(uint256 => uint256) durabilityOfProtectNumber;
         uint256 lastActionBlockNumber;
         uint256 lastPayIncentiveBlockNumber;
         uint256 lastCheckHenIndex;
@@ -105,24 +105,24 @@ contract GoldenTop is AdminControl {
         return accountInfos[account].totalTrashCan;
     }
 
-    function getAccountTotalOwnHens(address account, uint256 henId) public view returns (uint256){
-        return accountInfos[account].totalOwnHens[henId];
+    function getAccountOwnHens(address account, uint256 henId) public view returns (uint256){
+        return accountInfos[account].ownHens[henId];
     }
 
     function getAccountHensInCoop(address account, uint256 henId) public view returns (uint256){
         return accountInfos[account].hensInCoop[henId];
     }
 
-    function getAccountTotalOwnWatchDogs(address account, uint256 dogId) public view returns (bool){
-        return accountInfos[account].totalOwnWatchDogs[dogId];
+    function getAccountOwnWatchDogs(address account, uint256 dogId) public view returns (bool){
+        return accountInfos[account].ownWatchDogs[dogId];
     }
 
     function getAccountTotalProtectNumbers(address account) public view returns (uint256){
         return accountInfos[account].totalProtectNumbers;
     }
 
-    function getAccountProtectNumbers(address account, uint256 protectNumber) public view returns (uint256){
-        return accountInfos[account].protectNumbers[protectNumber];
+    function getAccountProtectNumberDurability(address account, uint256 protectNumber) public view returns (uint256){
+        return accountInfos[account].durabilityOfProtectNumber[protectNumber];
     }
 
     function getAccountLastModifyBlockNumber(address account) public view returns(uint){
