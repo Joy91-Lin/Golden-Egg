@@ -68,7 +68,7 @@ contract AttackGame is VRFV2WrapperConsumerBase, Ownable, IAttckGameEvent{
         vrfFee = vrfFee * attackFeeMantissa / MANTISSA;
         return vrfFee;
     }
-
+    // 開始攻擊遊戲
     function attack(address target) external returns (uint256) {
         goldenEgg.isAccountJoinGame(msg.sender);
         goldenEgg.isAccountJoinGame(target);
@@ -120,6 +120,7 @@ contract AttackGame is VRFV2WrapperConsumerBase, Ownable, IAttckGameEvent{
         return requestId;
     }
 
+    // 攻擊遊戲結束
    function fulfillRandomWords(
         uint256 requestId,
         uint256[] memory randomWords
@@ -161,6 +162,7 @@ contract AttackGame is VRFV2WrapperConsumerBase, Ownable, IAttckGameEvent{
         return targetDebt;
     }
 
+    // 攻擊者偷egg token
     function giveEggToken(address attacker, address target) internal returns (uint256, uint256) {
         uint256 targetDogId = goldenEgg.getWatchDogInfo(target).id;
         uint256 lostPercentageMantissa = goldenEgg.getDogCatalog(targetDogId).lostPercentageMantissa;
@@ -187,6 +189,7 @@ contract AttackGame is VRFV2WrapperConsumerBase, Ownable, IAttckGameEvent{
         return (rewardEggAmount, targetDebt);
     }
 
+    // 丟垃圾給目標農場
     function dumpLitterToken(address attacker, address target) internal returns (uint256){
         uint256 targetDogId = goldenEgg.getWatchDogInfo(target).id;
         uint256 lostPercentageMantissa = goldenEgg.getDogCatalog(targetDogId).lostPercentageMantissa;
@@ -209,6 +212,7 @@ contract AttackGame is VRFV2WrapperConsumerBase, Ownable, IAttckGameEvent{
         return dumpLitterAmount;
     }
 
+    // 幫助目標農場開啟補償防護罩
     function helpTargetOpenProtectShell(uint256 requestId) internal {
         Attack memory attackInfo = attacks[requestId];
         address target = attackInfo.target;

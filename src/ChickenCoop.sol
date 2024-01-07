@@ -39,6 +39,7 @@ contract ChickenCoop is BirthFactory {
 
     mapping(address => mapping(uint256 => CoopSeat)) coopSeats;
 
+    // 將雞上架到農場的位子上
     function putUpHen(uint seatIndex, uint henId, bool forceExchange, uint feedAmount) public payable {
         exchangeCoopSeatsPreCheck(msg.sender, msg.value, seatIndex);
         
@@ -70,6 +71,7 @@ contract ChickenCoop is BirthFactory {
         }
     }
 
+    // 將雞從位子上下架
     function takeDownHen(uint seatIndex, bool forceExchange) public payable {
         exchangeCoopSeatsPreCheck(msg.sender, msg.value, seatIndex);
 
@@ -95,6 +97,7 @@ contract ChickenCoop is BirthFactory {
         setAccountActionModifyBlock(msg.sender, AccountAction.ExchangeHen);
     }
 
+    // 確認玩家是否擁有這款雞
     function ownHenId(address sender, uint henId) internal view {
         uint256 totalHen = accountInfos[sender].ownHens[henId];
         uint256 henInCoop = accountInfos[sender].hensInCoop[henId];
@@ -102,18 +105,20 @@ contract ChickenCoop is BirthFactory {
             revert InvalidHenId(henId);
     }
 
+    // 調整位子前的檢查
     function exchangeCoopSeatsPreCheck(address sender, uint value, uint seatIndex) internal {
         isAccountJoinGame(sender);
         checkSeatExist(sender, seatIndex);
         checkExchangeFee(sender, value);
     }
 
-
+    // 確認位子是否存在
     function checkSeatExist(address sender, uint index) internal view {
         if(!coopSeats[sender][index].isOpened) 
             revert InvalidSeatIndex(sender, index);
     }
 
+    // 檢查交換位子的費用
     function checkExchangeFee(address sender, uint value) internal {
         if(value > 0){
             if(value != handlingFeeEther) 
@@ -243,7 +248,7 @@ contract ChickenCoop is BirthFactory {
             coopSeats[target][seatIndex].layingLeftCycle = leftBlock - validBlock;
         }
     }
-
+    // 產出蛋
     function giveEggToken(address target, uint unitEggToken, uint nowLayingTimes) internal  returns (uint nowLayEggAmount){
         uint increaseEggToken = unitEggToken * nowLayingTimes;
         uint debtEggToken = accountInfos[target].debtEggToken;
@@ -256,13 +261,13 @@ contract ChickenCoop is BirthFactory {
         }
         return nowLayEggAmount;
     }
-
+    // 產出垃圾
     function giveLitterToken(address target, uint unitLitterToken, uint nowLayingTimes) internal  returns (uint nowLitterAmount){
         nowLitterAmount = unitLitterToken * nowLayingTimes;
         IToken(litterTokenAddress).mint(target, nowLitterAmount);
         return nowLitterAmount;
     }
-
+    // 產出保護殼
     function giveProtectShell(address target, uint seatIndex, uint shellPeriod, uint unitShellToken, uint nowLayingTimes) internal  returns (uint nowShellAmount){
         CoopSeat memory coopSeat = coopSeats[target][seatIndex];
         uint preShellAmount = coopSeat.protectShellCount;
@@ -288,7 +293,7 @@ contract ChickenCoop is BirthFactory {
         newLeftLayingBlock = unitEggToken - deltaBlock % unitEggToken;
         return (nowLayingTimes, newLeftLayingBlock);
     }
-
+    // 喂食別人的雞
     function helpFeedHen(address target, uint seatIndex, uint feedAmount) public {
         isAccountJoinGame(target);
 
@@ -296,13 +301,13 @@ contract ChickenCoop is BirthFactory {
 
         feedHen(msg.sender, target, seatIndex, feedAmount);
     }
-
+    // 喂食自己的雞
     function feedOwnHen(uint seatIndex, uint feedAmount) public {
         payIncentive(msg.sender);
 
         feedHen(msg.sender, msg.sender, seatIndex, feedAmount);
     }
-    
+    // 喂食雞
     function feedHen(address sender, address target, uint seatIndex, uint feedAmount) internal {
         CoopSeat memory coopSeat = coopSeats[target][seatIndex];
         if(!coopSeat.isOpened)
@@ -332,7 +337,7 @@ contract ChickenCoop is BirthFactory {
             setAccountActionModifyBlock(target, AccountAction.Feed);
         }
     }
-
+    // 取得雞的飢餓狀態
     function getHenHunger(address target) public view returns (FoodIntake[] memory){
         AccountInfo storage accountInfo = accountInfos[target];
         uint256 totalSeat = accountInfo.totalCoopSeats;
@@ -350,7 +355,7 @@ contract ChickenCoop is BirthFactory {
         }
         return foodIntakes;
     }
-
+    // 取得自己農場位子狀態
     function getCoopSeatInfo() public view returns (CoopSeat[] memory){
         AccountInfo storage accountInfo = accountInfos[msg.sender];
         uint256 totalSeat = accountInfo.totalCoopSeats;

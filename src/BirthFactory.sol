@@ -31,6 +31,7 @@ contract BirthFactory is GoldenTop {
     uint256 public totalDogCharacters = 0;
 
     /** admin only **/
+    // 產生新的雞
     function createHen(
         uint256 _layingCycle,
         uint256 _consumeFoodForOneBlock,
@@ -62,6 +63,7 @@ contract BirthFactory is GoldenTop {
         totalHenCharacters++;
     }
 
+    // 調整雞的參數
     function adjustHen(
         uint256 _henId,
         uint256 _layingCycle,
@@ -92,6 +94,7 @@ contract BirthFactory is GoldenTop {
         });
     }
 
+    // 產生新的狗
     function createDog(
         uint256 _compensationPercentage,
         uint256 _lostPercentage,
@@ -109,6 +112,7 @@ contract BirthFactory is GoldenTop {
         totalDogCharacters++;
     }
 
+    // 調整狗的參數
     function adjustDog(
         uint256 _dogId,
         uint256 _compensationPercentage,
@@ -125,22 +129,24 @@ contract BirthFactory is GoldenTop {
         dogsCatalog[_dogId].isOnSale = _isOnSale;
     }
 
+    // 調整雞總供應量
     function adjustHenTotalSupply(uint256 _totalSupply) public {
         onlyAdmin();
         totalHenCharacters = _totalSupply;
     }
-
+    // 調整狗總供應量
     function adjustDogTotalSupply(uint256 _totalSupply) public {
         onlyAdmin();
         totalDogCharacters = _totalSupply;
     }
 
+    // 確認雞是否存在
     function checkHenExists(uint256 _henId) internal view {
         if(hensCatalog[_henId].layingCycle == 0 &&
             hensCatalog[_henId].consumeFoodForOneBlock == 0 
         ) revert InvalidHenId(_henId);
     }
-
+    // 確認狗是否存在
     function checkDogExists(uint256 _dogId) internal view {
         if(dogsCatalog[_dogId].compensationPercentageMantissa == 0 && 
         dogsCatalog[_dogId].lostPercentageMantissa == 0) 
