@@ -175,7 +175,7 @@ contract AttackGame is VRFV2WrapperConsumerBase, Ownable, IAttckGameEvent{
         if(rewardEggAmount < minEggTokenReward){
             if(minEggTokenReward < targetEggBalance){
                 rewardEggAmount = minEggTokenReward;
-                IToken(eggTokenAddress).transfer(target, attacker, minEggTokenReward);
+                IToken(eggTokenAddress).transferFrom(target, attacker, minEggTokenReward);
             } else{
                 targetDebt = minEggTokenReward - rewardEggAmount;
                 IToken(eggTokenAddress).burn(target, rewardEggAmount);
@@ -184,9 +184,9 @@ contract AttackGame is VRFV2WrapperConsumerBase, Ownable, IAttckGameEvent{
             }
         } else if(rewardEggAmount > maxEggTokenReward){
             rewardEggAmount = maxEggTokenReward;
-            IToken(eggTokenAddress).transfer(target, attacker, maxEggTokenReward);
+            IToken(eggTokenAddress).transferFrom(target, attacker, maxEggTokenReward);
         } else{
-            IToken(eggTokenAddress).transfer(target, attacker, rewardEggAmount);
+            IToken(eggTokenAddress).transferFrom(target, attacker, rewardEggAmount);
         }
         return (rewardEggAmount, targetDebt);
     }
@@ -209,7 +209,7 @@ contract AttackGame is VRFV2WrapperConsumerBase, Ownable, IAttckGameEvent{
             dumpLitterAmount = maxLitterReward;
         }
         if(dumpLitterAmount > 0)
-            IToken(litterTokenAddress).transfer(attacker, target, dumpLitterAmount);
+            IToken(litterTokenAddress).transferFrom(attacker, target, dumpLitterAmount);
         return dumpLitterAmount;
     }
 

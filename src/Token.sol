@@ -10,7 +10,7 @@ interface IToken{
     function balanceOf(address account) external view returns(uint256);
     function getRatioOfEth() external view returns(uint256);
     /** Admin only **/
-    function transfer(address from, address to, uint256 value) external;
+    function transferFrom(address from, address to, uint256 value) external;
     function mint(address account, uint256 value) external;
     function burn(address account, uint256 value) external;
 }
@@ -95,7 +95,7 @@ contract Token is  ITokenError, ITokenEvent, IToken, AdminControl{
         return ratioOfEth;
     }
 
-    function transfer(address from, address to, uint256 value) public {
+    function transferFrom(address from, address to, uint256 value) public {
         onlyAdmin();
         if (from == address(0)) {
             revert InvalidSender(address(0));
