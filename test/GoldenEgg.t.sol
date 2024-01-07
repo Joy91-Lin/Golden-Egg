@@ -68,13 +68,13 @@ contract GoldenEggTest is Test, GoldenEggScript {
         // check enter game
         vm.prank(user1);
         uint initProtectNumber1 = goldenEgg.startGame();
-        assertEq(goldenEgg.maxDurabilityOfProtectNumber(), goldenEgg.getAccountProtectNumbers(user1, initProtectNumber1));
-        assertEq(0, goldenEgg.getAccountProtectNumbers(user1, initProtectNumber1-1));
+        assertEq(goldenEgg.maxDurabilityOfProtectNumber(), goldenEgg.getAccountProtectNumberDurability(user1, initProtectNumber1));
+        assertEq(0, goldenEgg.getAccountProtectNumberDurability(user1, initProtectNumber1-1));
 
         vm.prank(user2);
         uint initProtectNumber2 = goldenEgg.startGame();
-        assertEq(goldenEgg.maxDurabilityOfProtectNumber(), goldenEgg.getAccountProtectNumbers(user2, initProtectNumber2));
-        assertEq(0, goldenEgg.getAccountProtectNumbers(user2, initProtectNumber2-1));
+        assertEq(goldenEgg.maxDurabilityOfProtectNumber(), goldenEgg.getAccountProtectNumberDurability(user2, initProtectNumber2));
+        assertEq(0, goldenEgg.getAccountProtectNumberDurability(user2, initProtectNumber2-1));
     }
 
     function test_ownerAdmin()public{
@@ -98,15 +98,15 @@ contract GoldenEggTest is Test, GoldenEggScript {
 
     function test_entryGameInitValue()public{
         vm.startPrank(user1);
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].isOpened, true);
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].isExisted, true);
+        assertEq(goldenEgg.getCoopSeatInfo()[0].isOpened, true);
+        assertEq(goldenEgg.getCoopSeatInfo()[0].isExisted, true);
         uint256 initFirstHen = goldenEgg.initFirstHen();
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].id, initFirstHen);
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].layingTimes, 0);
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].protectShellCount, 0);
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].foodIntake, goldenEgg.getHenCatalog(initFirstHen).maxFoodIntake);
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].layingLeftCycle, goldenEgg.getHenCatalog(initFirstHen).layingCycle);
-        assertEq(goldenEgg.getCoopSeatInfo(false)[0].lastCheckBlockNumberPerSeat, block.number);
+        assertEq(goldenEgg.getCoopSeatInfo()[0].id, initFirstHen);
+        assertEq(goldenEgg.getCoopSeatInfo()[0].layingTimes, 0);
+        assertEq(goldenEgg.getCoopSeatInfo()[0].protectShellCount, 0);
+        assertEq(goldenEgg.getCoopSeatInfo()[0].foodIntake, goldenEgg.getHenCatalog(initFirstHen).maxFoodIntake);
+        assertEq(goldenEgg.getCoopSeatInfo()[0].layingLeftCycle, goldenEgg.getHenCatalog(initFirstHen).layingCycle);
+        assertEq(goldenEgg.getCoopSeatInfo()[0].lastCheckBlockNumberPerSeat, block.number);
         assertEq(uint(AttackStatus.None), uint(goldenEgg.getWatchDogInfo(user1).status));
         vm.stopPrank();
     }
@@ -121,7 +121,7 @@ contract GoldenEggTest is Test, GoldenEggScript {
     function test_feedHen()public{
         vm.startPrank(user1);
         // can't feed hen if hen is full
-        vm.expectRevert(abi.encodeWithSelector(selectorHenIsFull, user1, 0, goldenEgg.getCoopSeatInfo(false)[0].id));
+        vm.expectRevert(abi.encodeWithSelector(selectorHenIsFull, user1, 0, goldenEgg.getCoopSeatInfo()[0].id));
         goldenEgg.feedOwnHen(0, 100);
 
         // can't feed hen if target don't have that seat
@@ -130,11 +130,11 @@ contract GoldenEggTest is Test, GoldenEggScript {
 
         // can't feed hen if target don't have hen in that seat
         goldenEgg.buyChickenCoopSeats{value:goldenEgg.getSellPrice().seatEthPrice}(1, false);
-        vm.expectRevert(abi.encodeWithSelector(selectorDonotHaveHenInSeat, user1, 1, goldenEgg.getCoopSeatInfo(false)[1].id));
+        vm.expectRevert(abi.encodeWithSelector(selectorDonotHaveHenInSeat, user1, 1, goldenEgg.getCoopSeatInfo()[1].id));
         goldenEgg.feedOwnHen(1, 100);
 
         // can't help feed hen if hen is full
-        vm.expectRevert(abi.encodeWithSelector(selectorHenIsFull, user2, 0, goldenEgg.getHenHunger(user2, 0).id));
+        vm.expectRevert(abi.encodeWithSelector(selectorHenIsFull, user2, 0, goldenEgg.getHenHunger(user2)[0].id));
         goldenEgg.helpFeedHen(user2, 0, 100);
 
         // can't help feed hen if target don't have that seat
@@ -143,10 +143,10 @@ contract GoldenEggTest is Test, GoldenEggScript {
 
         // digest some food
         vm.roll(block.number + 1);
-        uint256 preFoodIntake = goldenEgg.getCoopSeatInfo(0, false).foodIntake;
-        uint consumeFood = goldenEgg.getHenCatalog(goldenEgg.getCoopSeatInfo(0, false).id).consumeFoodForOneBlock * 1;
+        uint256 preFoodIntake = goldenEgg.getCoopSeatInfo()[0].foodIntake;
+        uint consumeFood = goldenEgg.getHenCatalog(goldenEgg.getCoopSeatInfo()[0].id).consumeFoodForOneBlock * 1;
         goldenEgg.payIncentive(user1);
-        uint256 postFoodIntake = goldenEgg.getCoopSeatInfo(0, false).foodIntake;
+        uint256 postFoodIntake = goldenEgg.getCoopSeatInfo()[0].foodIntake;
         assertEq(preFoodIntake - postFoodIntake, consumeFood);
         vm.stopPrank();
 
@@ -154,7 +154,7 @@ contract GoldenEggTest is Test, GoldenEggScript {
         vm.startPrank(user1);
         uint256 preBalance = eggToken.balanceOf(user1);
         goldenEgg.feedOwnHen(0, 1 * 10 ** eggToken.decimals());   
-        assertEq(postFoodIntake + 1 * 10 ** eggToken.decimals(), goldenEgg.getCoopSeatInfo(0, false).foodIntake);
+        assertEq(postFoodIntake + 1 * 10 ** eggToken.decimals(), goldenEgg.getCoopSeatInfo()[0].foodIntake);
         assertEq(1 * 10 ** eggToken.decimals(), preBalance - eggToken.balanceOf(user1));
         vm.stopPrank();
 
@@ -174,8 +174,8 @@ contract GoldenEggTest is Test, GoldenEggScript {
 
         deal(address(eggToken), nonJoinGame, 1 * 10 ** eggToken.decimals());
         goldenEgg.helpFeedHen(user1, 0, nonJoinFeedAmount);
-        uint maxFoodIntake =  goldenEgg.getHenHunger(user1, 0).maxFoodIntake;
-        uint foodIntake =  goldenEgg.getHenHunger(user1, 0).foodIntake;
+        uint maxFoodIntake =  goldenEgg.getHenHunger(user1)[0].maxFoodIntake;
+        uint foodIntake =  goldenEgg.getHenHunger(user1)[0].foodIntake;
         vm.stopPrank();
 
 
@@ -184,7 +184,7 @@ contract GoldenEggTest is Test, GoldenEggScript {
         vm.startPrank(user1);
         preBalance = eggToken.balanceOf(user1);
         goldenEgg.feedOwnHen(0, biggerThanMaxFoodIntake);   
-        assertEq(goldenEgg.getHenCatalog(0).maxFoodIntake, goldenEgg.getCoopSeatInfo(0, false).foodIntake);
+        assertEq(goldenEgg.getHenCatalog(0).maxFoodIntake, goldenEgg.getCoopSeatInfo()[0].foodIntake);
         assertEq(maxFoodIntake - foodIntake, preBalance - eggToken.balanceOf(user1));
         assertLt(preBalance - eggToken.balanceOf(user1), biggerThanMaxFoodIntake);
         vm.stopPrank();
