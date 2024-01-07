@@ -19,16 +19,6 @@ contract WatchDog is BirthFactory{
         AttackStatus status;
     }
 
-    // struct Attack {
-    //     uint256 chainLinkFees;
-    //     address payable attacker;
-    //     address target;
-    //     uint256 attackRandom;
-    //     uint256 reward;
-    //     uint256 litter;
-    //     bool attackResult;
-    //     AttackStatus status;
-    // }
     
     enum AttackStatus {
         None,
@@ -41,21 +31,7 @@ contract WatchDog is BirthFactory{
     uint256 constant maxOpenShellPeriod = 1000;
     uint256 constant cooldownPeriod = 100;
 
-    // /** attack game variable **/
-    // address constant linkAddress = 0x779877A7B0D9E8603169DdbD7836e478b4624789;
-    // address constant vrfWrapperAddress = 0xab18414CD93297B0d12ac29E63Ca20f515b3DB46;
-    // uint32 constant callbackGasLimit = 1_000_000;
-    // uint32 constant numWords = 1;
-    // uint16 constant requestConfirmations = 10; // give victimn 10 blocks to protect their coop
-    // uint256 constant attackFeeMantissa = 1.03 * 10 ** 18;
-    // mapping(uint256 => Attack) attacks;
-    // uint256 constant minEggTokenReward = 300 * 10 ** 18;
-    // uint256 constant maxEggTokenReward = 1000 * 10 ** 18;
-    // uint256 constant maxLitterReward = 1000 * 10 ** 18;
     uint256 constant targetShellRewardAmount = 100;
-    // uint256 constant closeFactorMantissa = 0.2 * 10 ** 18;
-
-    // constructor() VRFV2WrapperConsumerBase(linkAddress, vrfWrapperAddress) {}
 
     function initProtectShellForBeginer(uint amount) internal {
         uint256 currentBlock = getCurrentBlockNumber();
@@ -139,162 +115,6 @@ contract WatchDog is BirthFactory{
         return false;
     }
 
-    // function getAttackFee() external view returns (uint256) {
-    //     uint vrfFee = VRF_V2_WRAPPER.calculateRequestPrice(callbackGasLimit);
-    //     vrfFee = vrfFee * attackFeeMantissa / MANTISSA;
-    //     return vrfFee;
-    // }
-
-    // function attack(address target) external returns (uint256) {
-    //     // check attacker 活躍度
-    //     require(checkActivated(msg.sender), "Insufficient active value ");
-
-    //     require(target != address(0) && target != msg.sender, "Invalid attack");
-    //     // check enough fee
-    //     uint vrfFee = VRF_V2_WRAPPER.calculateRequestPrice(callbackGasLimit);
-    //     vrfFee = vrfFee * attackFeeMantissa / MANTISSA;
-    //     require(IERC20(linkAddress).balanceOf(msg.sender) >= vrfFee, "Not enough LINK!");
-        
-    //     // check target 活躍度
-    //     require(checkActivated(target), "Target can not be attack.");
-
-    //     // check target 防護罩是否開啟
-    //     require(!isProtectShellOpen(target), "Target's protect shell is open!");
-
-    //     // check target is not being attack
-    //     require(canAttack(target), "Target can not be attack now .");
-    //     watchDogInfos[target].status = AttackStatus.Pending;
-
-    //     // target have egg token
-    //     require(IToken(eggTokenAddress).balanceOf(target) > 0, "Target have no Egg Token!");
-
-    //     // 垃圾桶為滿
-    //     require(IToken(litterTokenAddress).balanceOf(target) < accountInfos[target].totalTrashCan , "Trash can is full!");
-
-    //     IERC20(linkAddress).transferFrom(msg.sender, address(this), vrfFee);
-
-    //     uint256 requestId = requestRandomness(
-    //         callbackGasLimit,
-    //         requestConfirmations,
-    //         numWords
-    //     );
-
-    //     watchDogInfos[msg.sender].lastLaunchAttackRequestId = requestId;
-    //     watchDogInfos[target].lastBeAttackedRequestId = requestId;
-    //     attacks[requestId] = Attack({
-    //         chainLinkFees: VRF_V2_WRAPPER.calculateRequestPrice(callbackGasLimit),
-    //         attacker: payable(msg.sender),
-    //         target: target,
-    //         attackRandom: 0,
-    //         reward: 0,
-    //         litter: 0,
-    //         attackResult: false,
-    //         status: AttackStatus.Pending
-    //     });
-    //     emit AttackRequest(requestId, msg.sender, target);
-    //     return requestId;
-    // }
-
-
-    // function fulfillRandomWords(
-    //     uint256 requestId,
-    //     uint256[] memory randomWords
-    // ) internal override {
-    //     Attack memory attackInfo = attacks[requestId];
-    //     require(attackInfo.status == AttackStatus.Pending, "Attack already completed");
-    //     require(attackInfo.chainLinkFees > 0, "Request not found");
-
-    //     uint256 attackRandom = (randomWords[0] % attackRange) + 1;
-        
-    //     attackInfo.attackRandom = attackRandom;
-
-    //     uint256 targetProtectNumber = accountInfos[attackInfo.target].durabilityOfProtectNumber[attackRandom];
-    //     bool attackResult = false;
-    //     if(targetProtectNumber > 0){
-    //         // attack fail
-    //         accountInfos[attackInfo.target].durabilityOfProtectNumber[attackRandom]--;
-    //         if(accountInfos[attackInfo.target].durabilityOfProtectNumber[attackRandom] == 0){
-    //             accountInfos[attackInfo.target].totalProtectNumbers--;
-    //         }
-    //     } else {
-    //         // attack success
-    //         attackResult = true;
-    //         giveRewardToAttacker(requestId);
-    //         helpTargetOpenProtectShell(requestId);
-    //     }
-
-    //     attacks[requestId].attackResult = attackResult;
-    //     attacks[requestId].status = AttackStatus.Completed;
-    //     watchDogInfos[attackInfo.target].status = AttackStatus.Completed;
-    //     emit AttackResult(requestId, attackInfo.attacker, attackInfo.target, attackResult);
-    //     setAccountActionModifyBlock(attackInfo.attacker, AccountAction.AttackGame);
-    // }
-
-    // function giveRewardToAttacker(uint256 requestId) internal {
-    //     Attack memory attackInfo = attacks[requestId];
-    //     address attacker = attackInfo.attacker;
-    //     address target = attackInfo.target;
-
-    //     uint256 eggReward = giveEggToken(attacker, target);
-    //     uint256 litterReward = dumpLitterToken(attacker, target);
-
-    //     attacks[requestId].reward = eggReward;
-    //     attacks[requestId].litter = litterReward;
-    // }
-
-    // function giveEggToken(address attacker, address target) internal returns (uint256) {
-    //     uint256 compensationPercentageMantissa = dogsCatalog[watchDogInfos[target].id].compensationPercentageMantissa;
-    //     uint256 targetEggBalance = IToken(eggTokenAddress).balanceOf(target);
-    //     uint256 rewardMaxEggAmount = targetEggBalance * closeFactorMantissa / MANTISSA;
-    //     uint256 rewardEggAmount = rewardMaxEggAmount * compensationPercentageMantissa / MANTISSA;
-
-    //     if(rewardEggAmount < minEggTokenReward){
-    //         uint256 targetDebt = minEggTokenReward - rewardEggAmount;
-    //         accountInfos[target].debtEggToken += targetDebt;
-    //         rewardEggAmount = minEggTokenReward;
-    //         IToken(eggTokenAddress).burn(target, rewardEggAmount);
-    //         IToken(eggTokenAddress).mint(attacker, minEggTokenReward);
-    //     } else if(rewardEggAmount > maxEggTokenReward){
-    //         rewardEggAmount = maxEggTokenReward;
-    //         IToken(eggTokenAddress).transfer(target, attacker, maxEggTokenReward);
-    //     } else{
-    //         IToken(eggTokenAddress).transfer(target, attacker, rewardEggAmount);
-    //     }
-    //     return rewardEggAmount;
-    // }
-
-    // function dumpLitterToken(address attacker, address target) internal returns (uint256){
-    //     uint256 lostPercentageMantissa = dogsCatalog[watchDogInfos[target].id].lostPercentageMantissa;
-    //     uint256 targetLitterBalance = IToken(litterTokenAddress).balanceOf(target);
-    //     uint256 targetTrashCanAmount = accountInfos[target].totalTrashCan;
-    //     uint256 leftAmount = targetTrashCanAmount - targetLitterBalance;
-    //     uint256 dumpMaxLitterAmount = leftAmount * closeFactorMantissa / MANTISSA;
-    //     uint256 dumpLitterAmount = dumpMaxLitterAmount * lostPercentageMantissa / MANTISSA;
-        
-    //     uint256 attackerLitterBalance = IToken(litterTokenAddress).balanceOf(attacker);
-    //     if(dumpLitterAmount > attackerLitterBalance){
-    //         dumpLitterAmount = attackerLitterBalance;
-    //     }
-
-    //     if(dumpLitterAmount > maxLitterReward){
-    //         dumpLitterAmount = maxLitterReward;
-    //     }
-
-    //     IToken(litterTokenAddress).transfer(attacker, target, dumpLitterAmount);
-    //     return dumpLitterAmount;
-    // }
-
-    // function helpTargetOpenProtectShell(uint256 requestId) internal {
-    //     Attack memory attackInfo = attacks[requestId];
-    //     address target = attackInfo.target;
-    //     uint256 currentBlock = getCurrentBlockNumber();
-    //     watchDogInfos[target].protectShellStartBlockNumber = currentBlock;
-    //     watchDogInfos[target].protectShellEndBlockNumber = currentBlock + targetShellReward;
-    //     uint256 compensationPercentageMantissa = dogsCatalog[watchDogInfos[target].id].compensationPercentageMantissa;
-    //     uint256 rewardEggAmount = targetShellReward * compensationPercentageMantissa / MANTISSA;
-    //     IToken(shellTokenAddress).mint(target, rewardEggAmount);
-    // }
-
     function canAttack(address target) public view returns(bool){
         if(watchDogInfos[target].status != AttackStatus.Pending && watchDogInfos[target].status != AttackStatus.Revert)
             return true;
@@ -306,20 +126,7 @@ contract WatchDog is BirthFactory{
             revert AccountIsBeingAttacked(target);
         return false;
     }
-
-    /** struct Attack  **/
-    // function getAttackStatus(uint256 requestId) external view returns (AttackStatus) {
-    //     return attacks[requestId].status;
-    // }
-
-    // function getRandomWords(uint256 requestId) external view returns (uint256){
-    //     return attacks[requestId].attackRandom;
-    // }
-
-    // function getAttackInfo(uint256 requestId) external view returns(Attack memory){
-    //     return attacks[requestId];
-    // }
-
+    
     /** struct WatchDogInfo **/
     function getWatchDogInfo(address account) public view returns(WatchDogInfo memory){
         return watchDogInfos[account];
