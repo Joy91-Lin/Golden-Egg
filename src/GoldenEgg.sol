@@ -164,7 +164,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         if(amount == 0) 
             revert InvalidInputNumber(msg.sender, amount);
         if(amount > maxPurchaseLimit)
-            revert ReachedPurchaseLimit(msg.sender, maxPurchaseLimit);
+            revert ReachedLimit(msg.sender, maxPurchaseLimit);
         isAttackStatusPending(msg.sender);
 
 
@@ -185,7 +185,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         if(amount == 0) 
             revert InvalidInputNumber(msg.sender, amount);
         if(amount > maxPurchaseLimit || amount + ownSeats > maxCoopSeat)
-            revert ReachedPurchaseLimit(msg.sender, maxPurchaseLimit);
+            revert ReachedLimit(msg.sender, maxPurchaseLimit);
         
         bool success = checkBill(msg.sender, msg.value, getSellPrice().seatEthPrice * amount);
         if(success){
@@ -251,7 +251,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         uint256 maxOwnNumber = hen.purchaselimit;
         uint256 nowOwnNumber = accountInfos[buyer].totalOwnHens[_henId];
         if(nowOwnNumber + 1 >= maxOwnNumber)
-            revert ReachedPurchaseLimit(buyer, maxOwnNumber);
+            revert ReachedLimit(buyer, maxOwnNumber);
         
 
         if (value > 0) {
@@ -274,7 +274,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         if(!dog.isOnSale || (dog.ethPrice == 0 && dog.eggPrice == 0))
             revert FailedToBuyWatchDog(buyer, _dogId);
         if(accountInfos[buyer].totalOwnWatchDogs[_dogId])
-            revert ReachedPurchaseLimit(buyer, 1);
+            revert ReachedLimit(buyer, 1);
 
         if (value > 0) {
             if(dog.ethPrice == 0)

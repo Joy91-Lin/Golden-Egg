@@ -31,7 +31,7 @@ contract GoldenEggTest is Test, GoldenEggScript {
     bytes4 selectorInvalidAccount = bytes4(keccak256("InvalidAccount(address)"));
     bytes4 selectorInvalidPayment = bytes4(keccak256("InvalidPayment(address,uint256)"));
     bytes4 selectorFailedToBuyHen = bytes4(keccak256("FailedToBuyHen(address,uint256)"));
-    bytes4 selectorReachedPurchaseLimit = bytes4(keccak256("ReachedPurchaseLimit(address,uint256)"));
+    bytes4 selectorReachedLimit = bytes4(keccak256("ReachedLimit(address,uint256)"));
     bytes4 selectorFailedToBuyWatchDog = bytes4(keccak256("FailedToBuyWatchDog(address,uint256)"));
     bytes4 selectorFailedtakeOutProtocolIncome = bytes4(keccak256("FailedtakeOutProtocolIncome(address,address,uint256)"));
     /** WatchDog **/

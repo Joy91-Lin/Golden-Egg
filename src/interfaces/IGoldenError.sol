@@ -23,7 +23,7 @@ interface IGoldenError{
     error InvalidAccount(address target);
     error InvalidPayment(address target, uint256 amount);
     error FailedToBuyHen(address target, uint256 henId);
-    error ReachedPurchaseLimit(address target, uint256 purchaseLimit);
+    error ReachedLimit(address target, uint256 purchaseLimit);
     error FailedToBuyWatchDog(address target, uint256 dogId);
     error FailedtakeOutProtocolIncome(address sender, address target, uint256 amount);
     /** WatchDog **/
