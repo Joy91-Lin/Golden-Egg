@@ -116,6 +116,12 @@ contract AttackGameTest is Test, AttackGame{
 
         assertEq(uint(goldenEgg.getWatchDogInfo(user2).status), uint(AttackStatus.Completed));
         assertEq(attacks[requestId].attackResult, true);
+        assertLt(beforeEggUser1, afterEggUser1);
+        assertGt(beforeLitterUser1, afterLitterUser1);
+        assertEq(beforeShellUser1, afterShellUser1);
+        assertGt(beforeEggUser2, afterEggUser2);
+        assertLt(beforeLitterUser2, afterLitterUser2);
+        assertLt(beforeShellUser2, afterShellUser2);
 
 
         vm.stopPrank();
