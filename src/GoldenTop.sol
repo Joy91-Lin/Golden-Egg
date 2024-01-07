@@ -56,7 +56,8 @@ contract GoldenTop is AdminControl {
         address _litterTokenAddress,
         address _shellTokenAddress,
         address _attackGameAddress
-    ) public onlyOwner{
+    ) public {
+        onlyContractOwner();
         eggTokenAddress = _eggTokenAddress;
         litterTokenAddress = _litterTokenAddress;
         shellTokenAddress = _shellTokenAddress;

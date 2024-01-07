@@ -20,11 +20,13 @@ contract AdminControl is Ownable, IGoldenError, IGoldenEvent{
             revert OwnableUnauthorizedAccount(msg.sender);
     }
 
-    function addAdmin(address account) public onlyOwner {
+    function addAdmin(address account) public {
+        onlyContractOwner();
         allowers[account] = true;
     }
 
-    function removeAdmin(address account) public onlyOwner {
+    function removeAdmin(address account) public {
+        onlyContractOwner();
         allowers[account] = false;
     }
 

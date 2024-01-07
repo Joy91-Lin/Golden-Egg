@@ -44,7 +44,7 @@ contract BirthFactory is GoldenTop {
         uint256 _eggPrice,
         bool _isOnSale
     ) public {
-        onlyContractOwner();
+        onlyAdmin();
         hensCatalog[totalHenCharacters] = HenCharacter({
             layingCycle: _layingCycle,
             consumeFoodForOneBlock: _consumeFoodForOneBlock,
@@ -76,7 +76,7 @@ contract BirthFactory is GoldenTop {
         uint256 _eggPrice,
         bool _isOnSale
     ) public {
-        onlyContractOwner();
+        onlyAdmin();
         hensCatalog[_henId] = HenCharacter({
             layingCycle: _layingCycle,
             consumeFoodForOneBlock: _consumeFoodForOneBlock,
@@ -99,7 +99,7 @@ contract BirthFactory is GoldenTop {
         uint256 _eggPrice,
         bool _isOnSale
     ) public {
-        onlyContractOwner();
+        onlyAdmin();
         dogsCatalog[totalDogCharacters].compensationPercentageMantissa = _compensationPercentage * 1e16;
         dogsCatalog[totalDogCharacters].lostPercentageMantissa = _lostPercentage * 1e16;
         dogsCatalog[totalDogCharacters].ethPrice = _ethPrice;
@@ -117,7 +117,7 @@ contract BirthFactory is GoldenTop {
         uint256 _eggPrice,
         bool _isOnSale
     ) public {
-        onlyContractOwner();
+        onlyAdmin();
         dogsCatalog[_dogId].compensationPercentageMantissa = _compensationPercentage * 1e16;
         dogsCatalog[_dogId].lostPercentageMantissa = _lostPercentage * 1e16;
         dogsCatalog[_dogId].ethPrice = _ethPrice;
@@ -126,12 +126,12 @@ contract BirthFactory is GoldenTop {
     }
 
     function adjustHenTotalSupply(uint256 _totalSupply) public {
-        onlyContractOwner();
+        onlyAdmin();
         totalHenCharacters = _totalSupply;
     }
 
     function adjustDogTotalSupply(uint256 _totalSupply) public {
-        onlyContractOwner();
+        onlyAdmin();
         totalDogCharacters = _totalSupply;
     }
 

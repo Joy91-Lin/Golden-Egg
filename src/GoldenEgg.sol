@@ -74,7 +74,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         uint256 _trashCanEthPrice,
         uint256 _seatEthPrice
     ) public returns (uint) {
-        onlyContractOwner();
+        onlyAdmin();
         sellPrices.push(
             Price({
                 addProtectNumberEthPrice: _addProtectNumberEthPrice,
@@ -87,7 +87,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
     }
 
     function changeSellPriceModel(uint model) public {
-        onlyContractOwner();
+        onlyAdmin();
         priceModel = model;
     }
 
@@ -304,23 +304,27 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         return true;
     }
 
-    function takeOutIncome() public onlyOwner{
+    function takeOutIncome() public {
+        onlyContractOwner();
         (bool success,) = owner().call{value: address(this).balance}("");
         if(!success)
             revert FailedtakeOutProtocolIncome(address(this), owner(), address(this).balance);
     }
     
-    function takeOutIncome(uint etherBalance) public onlyOwner{
+    function takeOutIncome(uint etherBalance) public {
+        onlyContractOwner();
         (bool success,) = owner().call{value: etherBalance}("");
         if(!success)
             revert FailedtakeOutProtocolIncome(address(this), owner(), etherBalance);
     }
 
-    function getContractBalance() public onlyOwner view returns(uint256){
+    function getContractBalance() public view returns(uint256){
+        onlyContractOwner();
         return address(this).balance;
     }
 
-    function setDemoCannotAttackAccount(address demoAddress) public onlyOwner{
+    function setDemoCannotAttackAccount(address demoAddress) public {
+        onlyContractOwner();
         accountInfos[demoAddress].totalProtectNumbers = 100;
         for(uint i = 1; i <= 100; i++){
             accountInfos[demoAddress].protectNumbers[i] = 10;
