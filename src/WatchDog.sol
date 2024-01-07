@@ -40,7 +40,7 @@ contract WatchDog is BirthFactory{
         watchDogInfos[msg.sender].status = AttackStatus.None;
         emit OpenProtectShell(msg.sender, currentBlock, currentBlock + amount);
     }
-
+    // 替換看守犬
     function changeWatchDog(uint256 id, bool forceExchange) public payable {
         isAccountJoinGame(msg.sender);
         isAttackStatusPending(msg.sender);
@@ -67,7 +67,7 @@ contract WatchDog is BirthFactory{
         emit WatchDogExchange(msg.sender, id);
         setAccountActionModifyBlock(msg.sender, AccountAction.ExchangeWatchDog);
     }
-
+    // 檢查手續費
     function checkFee(address sender, uint value) internal {
         if(value > 0){
             if(value != handlingFeeEther) 
@@ -79,7 +79,7 @@ contract WatchDog is BirthFactory{
             IToken(eggTokenAddress).burn(sender, handlingFeeEggToken);
         }
     }
-
+    // 開啟保護罩
     function openProtectShell(uint amount) public payable{
         isAttackStatusPending(msg.sender);
         watchDogInfos[msg.sender].status = AttackStatus.Revert;
@@ -114,31 +114,31 @@ contract WatchDog is BirthFactory{
         }
         return false;
     }
-
+    // 農場是否可被攻擊
     function canAttack(address target) public view returns(bool){
         if(watchDogInfos[target].status != AttackStatus.Pending && watchDogInfos[target].status != AttackStatus.Revert)
             return true;
         return false;
     }
-
+    // 確認是否正在被攻擊
     function isAttackStatusPending(address target) public view returns(bool){
         if(watchDogInfos[target].status == AttackStatus.Pending)
             revert AccountIsBeingAttacked(target);
         return false;
     }
-    
+
     /** struct WatchDogInfo **/
     function getWatchDogInfo(address account) public view returns(WatchDogInfo memory){
         return watchDogInfos[account];
     }
-
+    // 設定攻擊開始參數
     function setForAttackGameStart(uint256 requestId, address attacker, address target) public {
         onlyAdmin();
         watchDogInfos[target].status = AttackStatus.Pending;
         watchDogInfos[attacker].lastLaunchAttackRequestId = requestId;
         watchDogInfos[target].lastBeAttackedRequestId = requestId;
     }
-
+    // 設定攻擊結束參數
     function setForAttackGameEnd(address attacker, address target, bool attackSuccess, uint attackNumber, uint targetDebt)public {
         onlyAdmin();
         watchDogInfos[target].status = AttackStatus.Completed;
