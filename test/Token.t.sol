@@ -12,7 +12,11 @@ contract TokenTest is Test, GoldenEggScript{
 
     function setUp() public{
         run();
+        vm.prank(user1);
+        goldenEgg.startGame();
 
+        vm.prank(user2);
+        goldenEgg.startGame();
     }
 
     function test_AdminControl()public{
@@ -32,16 +36,18 @@ contract TokenTest is Test, GoldenEggScript{
     function test_mint() public{
         // admin can mint
         vm.startPrank(deployContract);
+        uint256 preBalance = eggToken.balanceOf(user1);
         eggToken.mint(user1, 100);
         vm.stopPrank();
-        assertEq(eggToken.balanceOf(user1), 100);
+        assertEq(eggToken.balanceOf(user1), preBalance + 100);
 
         // user1 can not mint
         vm.startPrank(user2);
+        preBalance = eggToken.balanceOf(user2);
         vm.expectRevert(abi.encodeWithSelector(adminErrorSelector, user2));
         eggToken.mint(user2, 100);
         vm.stopPrank();
-        assertEq(eggToken.balanceOf(user2), 0);
+        assertEq(eggToken.balanceOf(user2), preBalance);
     }
 
     function test_RatioOfEth() public {
@@ -54,11 +60,13 @@ contract TokenTest is Test, GoldenEggScript{
 
     function test_burn() public{
         vm.startPrank(deployContract);
+        uint256 preBalanceUser1 = eggToken.balanceOf(user1);
+        uint256 preBalanceUser2 = eggToken.balanceOf(user2);
         eggToken.mint(user1, 200);
         eggToken.mint(user2, 200);
         vm.stopPrank();
-        assertEq(eggToken.balanceOf(user1), 200);
-        assertEq(eggToken.balanceOf(user2), 200);
+        assertEq(eggToken.balanceOf(user1), preBalanceUser1 + 200);
+        assertEq(eggToken.balanceOf(user2), preBalanceUser2 + 200);
 
 
         // user1 can not burn
@@ -71,28 +79,48 @@ contract TokenTest is Test, GoldenEggScript{
         vm.prank(deployContract);
         eggToken.burn(user1, 200);
 
-        assertEq(eggToken.balanceOf(user1), 0);
-        assertEq(eggToken.balanceOf(user2), 200);
+        assertEq(eggToken.balanceOf(user1), preBalanceUser1);
+        assertEq(eggToken.balanceOf(user2), preBalanceUser2 + 200);
     }
 
     function test_transfer() public{
         // admin can transfer
         vm.startPrank(deployContract);
-        eggToken.mint(user1, 100);
-        assertEq(eggToken.balanceOf(user1), 100);
-        eggToken.transferFrom(user1, user2, 50);
+        uint256 preBalanceUser1 = eggToken.balanceOf(user1);
+        uint256 preBalanceUser2 = eggToken.balanceOf(user2);
+        eggToken.mint(user1, 10_000);
+        assertEq(eggToken.balanceOf(user1), preBalanceUser1 + 10_000);
+        eggToken.transferFrom(user1, user2, 100);
         vm.stopPrank();
 
-        assertEq(eggToken.balanceOf(user1), 50);
-        assertEq(eggToken.balanceOf(user2), 50);
+        assertEq(eggToken.balanceOf(user1), preBalanceUser1 + 10_000 - 100);
+        assertEq(eggToken.balanceOf(user2), preBalanceUser2 + 100);
 
         // user1 can not transfer
         vm.startPrank(user1);
         vm.expectRevert(abi.encodeWithSelector(adminErrorSelector, user1));
-        eggToken.transferFrom(user1, user2, 20);
+        eggToken.transferFrom(user1, user2, 100);
         vm.stopPrank();
 
-        assertEq(eggToken.balanceOf(user1), 50);
-        assertEq(eggToken.balanceOf(user2), 50);
+        assertEq(eggToken.balanceOf(user1), preBalanceUser1 + 10_000 - 100);
+        assertEq(eggToken.balanceOf(user2), preBalanceUser2 + 100);
+
+        // players can transfer eggToken through goldenEgg
+        vm.startPrank(user1);
+        preBalanceUser1 = eggToken.balanceOf(user1);
+        preBalanceUser2 = eggToken.balanceOf(user2);
+        goldenEgg.transferEggToken(user2, 100, false);
+        vm.stopPrank();
+        uint256 transferFee = goldenEgg.getSellPrice().transferTokenFeeEthPrice * eggToken.getRatioOfEth();
+        assertEq(eggToken.balanceOf(user1), preBalanceUser1 - 100 - transferFee);
+        assertEq(eggToken.balanceOf(user2), preBalanceUser2 + 100);
+
+        // transfer has max limit
+        bytes4 selectorReachedLimit = bytes4(keccak256("ReachedLimit(address,uint256)"));
+        vm.startPrank(user1);
+        uint256 biggerThanMaxTransferAmount = goldenEgg.maxTransFerTokenAmount() + 100;
+        vm.expectRevert(abi.encodeWithSelector(selectorReachedLimit, user1, goldenEgg.maxTransFerTokenAmount()));
+        goldenEgg.transferEggToken(user1, biggerThanMaxTransferAmount, false);
+        vm.stopPrank();
     }
 }
