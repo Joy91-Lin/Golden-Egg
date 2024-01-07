@@ -43,7 +43,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
             })
         );
     }
-
+    // 玩家開始遊戲
     function startGame() public returns (uint256 initProtectNumber){
         if(accountInfos[msg.sender].lastActionBlockNumber > 0 || msg.sender == address(0))
             revert InvalidAccount(msg.sender);
@@ -70,7 +70,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         changeWatchDog(initFirstWatchDog, true);
         initProtectShellForBeginer(initProtectShellBlockAmount);
     }
-
+    // 設定價格
     function setSellPrice(
         uint256 _addProtectNumberEthPrice,
         uint256 _removeProtectNumberEthPrice,
@@ -90,16 +90,16 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         );
         return sellPrices.length - 1;
     }
-
+    // 設定價格模式
     function changeSellPriceModel(uint model) public {
         onlyAdmin();
         priceModel = model;
     }
-
+    // 取得價格
     function getSellPrice() public view returns (Price memory) {
         return sellPrices[priceModel];
     }
-
+    // 購買雞
     function buyHen(uint256 _henId, bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         checkHenExists(_henId);
@@ -110,7 +110,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         }
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
     }
-
+    // 購買看門狗
     function buyWatchDog(uint256 _dogId, bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         checkDogExists(_dogId);
@@ -122,7 +122,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
     }
-
+    // 購買保護數字
     function addProtectNumber(uint256 _protectNumber, bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         isAttackStatusPending(msg.sender);
@@ -143,7 +143,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
     }
-
+    // 移除保護數字
     function removeProtectNumber(uint256 _protectNumber, bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         isAttackStatusPending(msg.sender);
@@ -163,7 +163,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
     }
-
+    // 購買垃圾桶容量
     function buyTrashCan(uint256 amount,bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         if(amount == 0) 
@@ -183,7 +183,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
 
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
     }
-    
+    // 購買雞舍座位
     function buyChickenCoopSeats(uint256 amount, bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         uint256 ownSeats = accountInfos[msg.sender].totalCoopSeats;
@@ -205,7 +205,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         }
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
     }
-
+    // 購買EggToken
     function buyEggToken(bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         if(msg.value == 0)
@@ -220,7 +220,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
     }
 
-
+    // 清理LitterToken
     function cleanLitter(bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         isAttackStatusPending(msg.sender);
@@ -236,7 +236,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         }
         setAccountActionModifyBlock(msg.sender, AccountAction.CleanCoop);
     }
-
+    // 購買ShellToken
     function buyProtectShell(bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         if(msg.value == 0)
@@ -249,7 +249,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         }
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
     }
-
+    // 傳遞EggToken
     function transferEggToken(address to, uint256 amount, bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         isAccountJoinGame(to);
@@ -269,7 +269,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         }
         setAccountActionModifyBlock(msg.sender, AccountAction.TransferToken);
     }
-
+    // 傳遞ShellToken
     function transferShellToken(address to, uint256 amount, bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         isAccountJoinGame(to);
@@ -290,7 +290,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         }
         setAccountActionModifyBlock(msg.sender, AccountAction.TransferToken);
     }
-
+    // 檢查購買雞的帳單並交付
     function checkHenBillAndDelivered(address buyer, uint256 _henId, uint256 value) internal {
         HenCharacter memory hen = hensCatalog[_henId];
         if(!hen.isOnSale || (hen.ethPrice == 0 && hen.eggPrice == 0))
@@ -315,7 +315,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         }
         accountInfos[buyer].ownHens[_henId]++;
     }
-
+    // 檢查購買狗的帳單並交付
     function checkDogBillAndDelivered(address buyer, uint256 _dogId, uint256 value) internal {
         DogCharacter memory dog = dogsCatalog[_dogId];
         if(!dog.isOnSale || (dog.ethPrice == 0 && dog.eggPrice == 0))
@@ -337,7 +337,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         }
         accountInfos[buyer].ownWatchDogs[_dogId] = true;
     }
-
+    // 檢查帳單
     function checkBill(address buyer, uint256 value,uint ethPrice)internal returns (bool){
         if(value > 0){
             if(value != ethPrice)
@@ -350,7 +350,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         }
         return true;
     }
-
+    
     function takeOutIncome() public {
         onlyContractOwner();
         (bool success,) = owner().call{value: address(this).balance}("");
