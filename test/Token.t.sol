@@ -44,6 +44,14 @@ contract TokenTest is Test, GoldenEggScript{
         assertEq(eggToken.balanceOf(user2), 0);
     }
 
+    function test_RatioOfEth() public {
+        uint256 eggRatio = eggToken.getRatioOfEth();
+        uint256 litterRatio = litterToken.getRatioOfEth();
+        uint256 shellRatio = shellToken.getRatioOfEth();
+        assertEq(eggRatio / 2, litterRatio);
+        assertEq(eggRatio / 10, shellRatio);
+    }
+
     function test_burn() public{
         vm.startPrank(deployContract);
         eggToken.mint(user1, 200);

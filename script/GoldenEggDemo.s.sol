@@ -26,9 +26,9 @@ contract GoldenEggScript is Script {
 
         goldenEgg = new GoldenEgg();
         attackGame = new AttackGame();
-        eggToken = new Token("Egg Token", "EGG", 10_000, address(goldenEgg), address(attackGame));
-        litterToken = new Token("Litter Token", "LITTER", 5_000, address(goldenEgg), address(attackGame));
-        shellToken = new Token("Protect Shell Token", "SHELL",1_000, address(goldenEgg), address(attackGame));
+        eggToken = new Token("Egg Token", "EGG", 1_000_000, address(goldenEgg), address(attackGame));
+        litterToken = new Token("Litter Token", "LITTER", 500_000, address(goldenEgg), address(attackGame));
+        shellToken = new Token("Protect Shell Token", "SHELL",100_000, address(goldenEgg), address(attackGame));
         goldenEgg.setUpAddress(
             address(eggToken),
             address(litterToken),
