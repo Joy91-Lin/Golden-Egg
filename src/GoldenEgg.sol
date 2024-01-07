@@ -8,11 +8,13 @@ contract GoldenEgg is ChickenCoop, WatchDog {
     uint256 public constant maxDurabilityOfProtectNumber = 10;
     uint256 public constant unitTrashCanSpace = 10 ** 18;
     uint256 public constant maxPurchaseLimit = 10;
+    uint256 public constant maxTransFerTokenAmount = 10_000 * 10 ** 18;
     struct Price {
         uint256 addProtectNumberEthPrice;
         uint256 removeProtectNumberEthPrice;
         uint256 trashCanEthPrice;
         uint256 seatEthPrice;
+        uint256 transferTokenFeeEthPrice;
     }
 
     uint private priceModel;
@@ -36,7 +38,8 @@ contract GoldenEgg is ChickenCoop, WatchDog {
                 addProtectNumberEthPrice: 0.0003 ether,
                 removeProtectNumberEthPrice: 0.0001 ether,
                 trashCanEthPrice: 0.0001 ether,
-                seatEthPrice: 0.0001 ether
+                seatEthPrice: 0.0001 ether,
+                transferTokenFeeEthPrice: 0.0001 ether
             })
         );
     }
@@ -72,7 +75,8 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         uint256 _addProtectNumberEthPrice,
         uint256 _removeProtectNumberEthPrice,
         uint256 _trashCanEthPrice,
-        uint256 _seatEthPrice
+        uint256 _seatEthPrice,
+        uint256 _transferTokenFeeEthPrice
     ) public returns (uint) {
         onlyAdmin();
         sellPrices.push(
@@ -80,7 +84,8 @@ contract GoldenEgg is ChickenCoop, WatchDog {
                 addProtectNumberEthPrice: _addProtectNumberEthPrice,
                 removeProtectNumberEthPrice: _removeProtectNumberEthPrice,
                 trashCanEthPrice: _trashCanEthPrice,
-                seatEthPrice: _seatEthPrice
+                seatEthPrice: _seatEthPrice,
+                transferTokenFeeEthPrice: _transferTokenFeeEthPrice
             })
         );
         return sellPrices.length - 1;
@@ -215,6 +220,7 @@ contract GoldenEgg is ChickenCoop, WatchDog {
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
     }
 
+
     function cleanLitter(bool _payIncentive) public payable {
         isAccountJoinGame(msg.sender);
         isAttackStatusPending(msg.sender);
@@ -242,6 +248,47 @@ contract GoldenEgg is ChickenCoop, WatchDog {
             payIncentive(msg.sender);
         }
         setAccountActionModifyBlock(msg.sender, AccountAction.Shopping);
+    }
+
+    function transferEggToken(address to, uint256 amount, bool _payIncentive) public payable {
+        isAccountJoinGame(msg.sender);
+        isAccountJoinGame(to);
+        if(amount == 0)
+            revert InvalidInputNumber(msg.sender, amount);
+        if(amount > maxTransFerTokenAmount)
+            revert ReachedLimit(msg.sender, maxTransFerTokenAmount);
+
+        bool success = checkBill(msg.sender, msg.value, getSellPrice().transferTokenFeeEthPrice);
+        if(success){
+            if(IToken(eggTokenAddress).balanceOf(msg.sender) < amount)
+                revert InvalidInputNumber(msg.sender, amount);
+            IToken(eggTokenAddress).transferFrom(msg.sender, to, amount);
+        }
+        if (_payIncentive) {
+            payIncentive(msg.sender);
+        }
+        setAccountActionModifyBlock(msg.sender, AccountAction.TransferToken);
+    }
+
+    function transferShellToken(address to, uint256 amount, bool _payIncentive) public payable {
+        isAccountJoinGame(msg.sender);
+        isAccountJoinGame(to);
+        if(amount == 0)
+            revert InvalidInputNumber(msg.sender, amount);
+        if(amount > maxTransFerTokenAmount)
+            revert ReachedLimit(msg.sender, maxTransFerTokenAmount);
+
+        bool success = checkBill(msg.sender, msg.value, getSellPrice().transferTokenFeeEthPrice);
+        if(success){
+            if(IToken(shellTokenAddress).balanceOf(msg.sender) < amount)
+                revert InvalidInputNumber(msg.sender, amount);
+
+            IToken(shellTokenAddress).transferFrom(msg.sender, to, amount);
+        }
+        if (_payIncentive) {
+            payIncentive(msg.sender);
+        }
+        setAccountActionModifyBlock(msg.sender, AccountAction.TransferToken);
     }
 
     function checkHenBillAndDelivered(address buyer, uint256 _henId, uint256 value) internal {

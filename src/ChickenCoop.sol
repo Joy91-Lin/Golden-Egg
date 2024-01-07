@@ -351,26 +351,11 @@ contract ChickenCoop is BirthFactory {
         return foodIntakes;
     }
 
-    function getHenHunger(address target, uint seatIndex) public view returns (FoodIntake memory){
-        isAccountJoinGame(target);
-        CoopSeat memory coopSeat = coopSeats[target][seatIndex];
-        if(!coopSeat.isOpened)
-            revert InvalidSeatIndex(target, seatIndex);
-        if(!coopSeat.isExisted)
-            revert DonotHaveHenInSeat(target, seatIndex, coopSeat.id);
-
-        HenCharacter memory hen = hensCatalog[coopSeat.id];
-        return FoodIntake(seatIndex, true, coopSeat.id, coopSeat.foodIntake, hen.maxFoodIntake);
-    }
-
-    function getCoopSeatInfo(bool _payIncentive) public returns (CoopSeat[] memory){
+    function getCoopSeatInfo() public view returns (CoopSeat[] memory){
         AccountInfo storage accountInfo = accountInfos[msg.sender];
         uint256 totalSeat = accountInfo.totalCoopSeats;
         isAccountJoinGame(msg.sender);
 
-        if(_payIncentive)
-            payIncentive(msg.sender);
-        
         CoopSeat[] memory coopSeatStatus = new CoopSeat[](totalSeat);
         uint i;
         for(i=0; i<totalSeat; i++){
@@ -379,15 +364,4 @@ contract ChickenCoop is BirthFactory {
         return coopSeatStatus;
     }
 
-    function getCoopSeatInfo(uint seatIndex, bool _payIncentive) public returns (CoopSeat memory){
-        isAccountJoinGame(msg.sender);
-        if(_payIncentive)
-            payIncentive(msg.sender);
-        CoopSeat memory coopSeat = coopSeats[msg.sender][seatIndex];
-        if(!coopSeat.isOpened)
-            revert InvalidSeatIndex(msg.sender, seatIndex);
-        if(!coopSeat.isExisted)
-            revert DonotHaveHenInSeat(msg.sender, seatIndex, coopSeat.id);
-        return coopSeat;
-    }
 }

@@ -19,7 +19,8 @@ contract GoldenTop is AdminControl {
         Shopping,
         PayIncentive,
         ExchangeHen,
-        ExchangeWatchDog
+        ExchangeWatchDog,
+        TransferToken
     }
 
     struct AccountInfo{
