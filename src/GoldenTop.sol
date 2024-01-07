@@ -67,14 +67,14 @@ contract GoldenTop is AdminControl {
         allowers[address(this)] = true;
         allowers[msg.sender] = true;
     }
-
+    // 設定最後活動區塊
     function setAccountActionModifyBlock(address account,AccountAction action) internal {
         uint256 currentBlockNumber = getCurrentBlockNumber();
         accountInfos[account].lastActionBlockNumber = currentBlockNumber;
 
         emit AccountLastestAction(account, currentBlockNumber, action);
     }
-
+    // 檢查活躍度
     function checkActivated(address account) public view returns (bool){
         isAccountJoinGame(account);
         uint accountLastModifyBlockNumber = accountInfos[account].lastActionBlockNumber;
@@ -90,7 +90,7 @@ contract GoldenTop is AdminControl {
     function getCurrentBlockNumber() public view returns (uint256){
         return block.number;
     }
-
+    // 確認玩家是否加入遊戲
     function isAccountJoinGame(address account) public view returns (bool){
         if(accountInfos[account].lastActionBlockNumber == 0)
             revert TargetDoesNotJoinGameYet(account);
