@@ -140,7 +140,7 @@ contract BirthFactory is GoldenTop {
     }
 
     function checkDogExists(uint256 _dogId) internal view {
-        if(_dogId <= totalDogCharacters) revert InvalidDogId(_dogId);
+        if(_dogId >= totalDogCharacters) revert InvalidDogId(_dogId);
     }
 
     /** struct HenCharacter **/
