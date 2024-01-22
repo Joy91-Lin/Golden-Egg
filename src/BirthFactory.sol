@@ -46,7 +46,8 @@ contract BirthFactory is GoldenTop {
         bool _isOnSale
     ) public {
         onlyAdmin();
-        hensCatalog[totalHenCharacters] = HenCharacter({
+        uint256 henIndex = totalHenCharacters;
+        hensCatalog[henIndex] = HenCharacter({
             layingCycle: _layingCycle,
             consumeFoodForOneBlock: _consumeFoodForOneBlock,
             maxFoodIntake: _maxFoodIntake,
@@ -59,8 +60,8 @@ contract BirthFactory is GoldenTop {
             eggPrice: _eggPrice,
             isOnSale: _isOnSale
         });
-        emit BirthHen(totalHenCharacters, _isOnSale);
         totalHenCharacters++;
+        emit BirthHen(henIndex, _isOnSale);
     }
 
     // 調整雞的參數
@@ -103,13 +104,14 @@ contract BirthFactory is GoldenTop {
         bool _isOnSale
     ) public {
         onlyAdmin();
-        dogsCatalog[totalDogCharacters].compensationPercentageMantissa = _compensationPercentage * 1e16;
-        dogsCatalog[totalDogCharacters].lostPercentageMantissa = _lostPercentage * 1e16;
-        dogsCatalog[totalDogCharacters].ethPrice = _ethPrice;
-        dogsCatalog[totalDogCharacters].eggPrice = _eggPrice;
-        dogsCatalog[totalDogCharacters].isOnSale = _isOnSale;
-        emit BirthDog(totalDogCharacters, _isOnSale);
+        uint256 dogIndex = totalDogCharacters;
+        dogsCatalog[dogIndex].compensationPercentageMantissa = _compensationPercentage * 1e16;
+        dogsCatalog[dogIndex].lostPercentageMantissa = _lostPercentage * 1e16;
+        dogsCatalog[dogIndex].ethPrice = _ethPrice;
+        dogsCatalog[dogIndex].eggPrice = _eggPrice;
+        dogsCatalog[dogIndex].isOnSale = _isOnSale;
         totalDogCharacters++;
+        emit BirthDog(dogIndex, _isOnSale);
     }
 
     // 調整狗的參數
@@ -129,16 +131,16 @@ contract BirthFactory is GoldenTop {
         dogsCatalog[_dogId].isOnSale = _isOnSale;
     }
 
-    // 調整雞總供應量
-    function adjustHenTotalSupply(uint256 _totalSupply) public {
-        onlyAdmin();
-        totalHenCharacters = _totalSupply;
-    }
-    // 調整狗總供應量
-    function adjustDogTotalSupply(uint256 _totalSupply) public {
-        onlyAdmin();
-        totalDogCharacters = _totalSupply;
-    }
+    // // 調整雞總供應量
+    // function adjustHenTotalSupply(uint256 _totalSupply) public {
+    //     onlyAdmin();
+    //     totalHenCharacters = _totalSupply;
+    // }
+    // // 調整狗總供應量
+    // function adjustDogTotalSupply(uint256 _totalSupply) public {
+    //     onlyAdmin();
+    //     totalDogCharacters = _totalSupply;
+    // }
 
     // 確認雞是否存在
     function checkHenExists(uint256 _henId) internal view {
